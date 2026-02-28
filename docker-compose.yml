@@ -1,0 +1,114 @@
+version: '3.9'
+
+services:
+  # ──────────────────────────────────────────
+  # PostgreSQL Database
+  # ──────────────────────────────────────────
+  postgres:
+    image: postgres:16-alpine
+    container_name: muellim_db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: muellim_agent
+      POSTGRES_USER: arti_admin
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-ArtiSecure2026!}
+      POSTGRES_INITDB_ARGS: "--encoding=UTF-8 --locale=az_AZ.UTF-8"
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./database/migrations/001_schema.sql:/docker-entrypoint-initdb.d/01_schema.sql
+      - ./database/seeds/001_standards_seed.sql:/docker-entrypoint-initdb.d/02_seed.sql
+      - ./database/seeds/002_extended_standards.sql:/docker-entrypoint-initdb.d/03_extended.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U arti_admin -d muellim_agent"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - muellim_net
+
+  # ──────────────────────────────────────────
+  # Node.js API Server
+  # ──────────────────────────────────────────
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: muellim_api
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      NODE_ENV: production
+      PORT: 3000
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_NAME: muellim_agent
+      DB_USER: arti_admin
+      DB_PASSWORD: ${DB_PASSWORD:-ArtiSecure2026!}
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY}
+      OPENAI_API_KEY: ${OPENAI_API_KEY}
+      JWT_SECRET: ${JWT_SECRET:-muellim-agent-jwt-secret-2026}
+      DEFAULT_AI_MODEL: claude-sonnet-4-5-20250514
+    volumes:
+      - uploads:/app/uploads
+      - logs:/app/logs
+    networks:
+      - muellim_net
+
+  # ──────────────────────────────────────────
+  # R Shiny Dashboard
+  # ──────────────────────────────────────────
+  shiny:
+    build:
+      context: .
+      dockerfile: Dockerfile.shiny
+    container_name: muellim_shiny
+    restart: unless-stopped
+    ports:
+      - "3838:3838"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_NAME: muellim_agent
+      DB_USER: arti_admin
+      DB_PASSWORD: ${DB_PASSWORD:-ArtiSecure2026!}
+      API_URL: http://api:3000/api/v1
+      SHINY_PORT: 3838
+    networks:
+      - muellim_net
+
+  # ──────────────────────────────────────────
+  # pgAdmin (development only)
+  # ──────────────────────────────────────────
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    container_name: muellim_pgadmin
+    profiles: ["dev"]
+    restart: unless-stopped
+    ports:
+      - "5050:80"
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@arti.edu.az
+      PGADMIN_DEFAULT_PASSWORD: admin123
+    networks:
+      - muellim_net
+
+volumes:
+  pgdata:
+    driver: local
+  uploads:
+    driver: local
+  logs:
+    driver: local
+
+networks:
+  muellim_net:
+    driver: bridge

@@ -1,0 +1,32 @@
+{
+  "permissions": {
+    "allow": [
+      "bash(npm *)",
+      "bash(node *)",
+      "bash(npx *)",
+      "bash(psql *)",
+      "bash(createdb *)",
+      "bash(curl *)",
+      "bash(mkdir *)",
+      "bash(cp *)",
+      "bash(cat *)",
+      "bash(chmod *)",
+      "bash(ls *)",
+      "bash(Rscript *)",
+      "read(**)",
+      "write(src/**)",
+      "write(database/**)",
+      "write(r_shiny/**)",
+      "write(scripts/**)",
+      "write(tests/**)",
+      "write(config/**)",
+      "write(docs/**)",
+      "write(.env)",
+      "write(package.json)"
+    ],
+    "deny": [
+      "bash(rm -rf /)",
+      "write(.claude/**)"
+    ]
+  }
+}

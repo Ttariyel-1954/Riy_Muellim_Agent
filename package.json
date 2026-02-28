@@ -1,0 +1,46 @@
+{
+  "name": "muellim-agent",
+  "version": "1.0.0",
+  "description": "AI Agent for Middle School Teachers - ARTI 2026",
+  "main": "src/server.js",
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "nodemon src/server.js",
+    "db:migrate": "node database/migrations/run.js",
+    "db:seed": "node database/seeds/run.js",
+    "db:setup": "npm run db:migrate && npm run db:seed",
+    "test": "jest --coverage",
+    "lint": "eslint src/",
+    "shiny": "Rscript r_shiny/app/app.R"
+  },
+  "dependencies": {
+    "express": "^4.18.2",
+    "pg": "^8.12.0",
+    "pg-pool": "^3.6.1",
+    "dotenv": "^16.3.1",
+    "cors": "^2.8.5",
+    "helmet": "^7.1.0",
+    "morgan": "^1.10.0",
+    "jsonwebtoken": "^9.0.2",
+    "bcryptjs": "^2.4.3",
+    "express-rate-limit": "^7.1.4",
+    "multer": "^1.4.5-lts.1",
+    "pptxgenjs": "^3.12.0",
+    "docx": "^8.5.0",
+    "exceljs": "^4.4.0",
+    "pdf-lib": "^1.17.1",
+    "winston": "^3.11.0",
+    "node-cron": "^3.0.3",
+    "speakeasy": "^2.0.0",
+    "qrcode": "^1.5.3",
+    "@anthropic-ai/sdk": "^0.78.0",
+    "openai": "^4.20.0"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.2",
+    "jest": "^29.7.0",
+    "eslint": "^8.55.0"
+  },
+  "author": "ARTI - Tariyel Talibov",
+  "license": "MIT"
+}
