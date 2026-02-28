@@ -116,28 +116,81 @@ class AIEngine {
     }
 
     // Structured JSON output
-    async completeJSON({ prompt, systemPrompt, model, schema }) {
-        const jsonPrompt = `${prompt}\n\nCAVABINI YERİNƏ JSON formatında qaytar. Schema:\n${JSON.stringify(schema, null, 2)}\n\nYALNIZ JSON qaytar, başqa heç nə əlavə etmə.`;
+    async completeJSON({ prompt, systemPrompt, model, schema, maxTokens }) {
+        // claude-3-haiku max 4096, default based on model
+        const selectedModel = model || this.defaultModel;
+        const modelMax = selectedModel.includes('haiku') ? 4096 : 8192;
+        maxTokens = Math.min(maxTokens || modelMax, modelMax);
+        const jsonPrompt = `${prompt}\n\nCAVABINI YERİNƏ JSON formatında qaytar. Schema:\n${JSON.stringify(schema, null, 2)}\n\nYALNIZ JSON qaytar, başqa heç nə əlavə etmə. JSON-u tam bitir, yarımçıq qoyma.`;
 
         const result = await this.complete({
             prompt: jsonPrompt,
             systemPrompt,
             model,
+            maxTokens,
             temperature: 0.3, // Lower temp for structured output
         });
 
         if (result.success) {
             try {
-                const cleaned = result.content
+                let cleaned = result.content
                     .replace(/```json\n?/g, '')
                     .replace(/```\n?/g, '')
                     .trim();
+
+                // Remove trailing commas before } or ]
+                cleaned = cleaned.replace(/,\s*([\]}])/g, '$1');
+
                 result.parsed = JSON.parse(cleaned);
             } catch (e) {
-                result.parseError = e.message;
+                // Try to repair truncated JSON
+                try {
+                    result.parsed = this._repairJSON(result.content);
+                } catch (e2) {
+                    result.parseError = e.message;
+                }
             }
         }
         return result;
+    }
+
+    // Attempt to repair truncated or malformed JSON
+    _repairJSON(raw) {
+        let text = raw
+            .replace(/```json\n?/g, '')
+            .replace(/```\n?/g, '')
+            .trim();
+
+        // Remove trailing commas
+        text = text.replace(/,\s*([\]}])/g, '$1');
+
+        // Count open/close brackets to fix truncation
+        let openBraces = 0, openBrackets = 0;
+        let inString = false, escape = false;
+
+        for (const ch of text) {
+            if (escape) { escape = false; continue; }
+            if (ch === '\\') { escape = true; continue; }
+            if (ch === '"') { inString = !inString; continue; }
+            if (inString) continue;
+            if (ch === '{') openBraces++;
+            if (ch === '}') openBraces--;
+            if (ch === '[') openBrackets++;
+            if (ch === ']') openBrackets--;
+        }
+
+        // Remove any trailing incomplete key-value pair
+        if (openBraces > 0 || openBrackets > 0) {
+            // Trim trailing incomplete content after last complete value
+            text = text.replace(/,\s*"[^"]*"?\s*:?\s*[^,\]}\n]*$/, '');
+            text = text.replace(/,\s*$/, '');
+        }
+
+        // Close unclosed brackets/braces
+        while (openBrackets > 0) { text += ']'; openBrackets--; }
+        while (openBraces > 0) { text += '}'; openBraces--; }
+
+        return JSON.parse(text);
     }
 
     // Batch processing

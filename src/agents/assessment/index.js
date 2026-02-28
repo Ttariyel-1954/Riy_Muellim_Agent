@@ -18,11 +18,11 @@ class AssessmentAgent {
         const standards = await this._getStandards(subjectCode, grade, config.standardCodes);
 
         const questionConfig = {
-            mcqCount: config.mcqCount || 10,
-            shortAnswerCount: config.shortAnswerCount || 3,
-            essayCount: config.essayCount || 1,
-            trueFalseCount: config.trueFalseCount || 5,
-            matchingCount: config.matchingCount || 2,
+            mcqCount: config.mcqCount || 5,
+            shortAnswerCount: config.shortAnswerCount || 2,
+            essayCount: config.essayCount || 0,
+            trueFalseCount: config.trueFalseCount || 3,
+            matchingCount: config.matchingCount || 0,
             bloomDistribution: config.bloomDistribution || {
                 'xatırlama': 20, 'anlama': 25, 'tətbiqetmə': 30, 'təhlil': 15, 'qiymətləndirmə': 5, 'yaratma': 5
             },
@@ -334,13 +334,30 @@ HƏR SUAL ÜÇÜN:
         return result.rows;
     }
 
+    // Map AI question types to DB enum values
+    _normalizeQuestionType(aiType) {
+        const typeMap = {
+            'mcq': 'mcq', 'MCQ': 'mcq', 'çoxseçimli': 'mcq', 'multiple_choice': 'mcq', 'multi_choice': 'mcq',
+            'true_false': 'true_false', 'doğru/yanlış': 'true_false', 'dogru_yanlis': 'true_false', 'doğru_yanlış': 'true_false', 'true/false': 'true_false',
+            'short_answer': 'short_answer', 'qısa_cavab': 'short_answer', 'qısa cavab': 'short_answer', 'short': 'short_answer',
+            'essay': 'essay', 'esse': 'essay', 'açıq': 'essay', 'açıq sual': 'essay', 'open': 'essay',
+            'matching': 'matching', 'uyğunlaşdırma': 'matching', 'match': 'matching',
+            'fill_blank': 'fill_blank', 'boşluq': 'fill_blank', 'boşluq doldurma': 'fill_blank', 'fill_in_the_blank': 'fill_blank',
+            'numeric': 'numeric', 'rəqəmsal': 'numeric',
+            'ordering': 'ordering', 'sıralama': 'ordering',
+            'multiple_response': 'multiple_response',
+        };
+        const normalized = typeMap[aiType] || typeMap[aiType?.toLowerCase()] || 'short_answer';
+        return normalized;
+    }
+
     async _saveAssessment(teacherId, subjectCode, grade, topic, type, testData) {
         return await transaction(async (client) => {
             const subj = await client.query('SELECT id FROM subjects WHERE code = $1', [subjectCode]);
             const subjectId = subj.rows[0]?.id;
 
             const assessment = await client.query(`
-                INSERT INTO assessments (teacher_id, subject_id, title, assessment_type, grade, 
+                INSERT INTO assessments (teacher_id, subject_id, title, assessment_type, grade,
                     total_points, duration_minutes, ai_generated, status)
                 VALUES ($1, $2, $3, $4, $5, $6, $7, true, 'draft') RETURNING *
             `, [teacherId, subjectId, testData.title, type, grade, testData.totalPoints, testData.duration]);
@@ -349,12 +366,13 @@ HƏR SUAL ÜÇÜN:
 
             for (let i = 0; i < (testData.questions || []).length; i++) {
                 const q = testData.questions[i];
+                const questionType = this._normalizeQuestionType(q.type);
                 await client.query(`
-                    INSERT INTO questions (assessment_id, question_type, question_text, options, 
-                        correct_answer, explanation, points, difficulty, discrimination, 
+                    INSERT INTO questions (assessment_id, question_type, question_text, options,
+                        correct_answer, explanation, points, difficulty, discrimination,
                         bloom_level, dok_level, position, ai_generated)
                     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, true)
-                `, [assessmentId, q.type, q.text, JSON.stringify(q.options || []),
+                `, [assessmentId, questionType, q.text, JSON.stringify(q.options || []),
                     JSON.stringify(q.correctAnswer), q.explanation, q.points || 1,
                     q.difficulty, q.discrimination, q.bloom, q.dok || 2, i + 1]);
             }
