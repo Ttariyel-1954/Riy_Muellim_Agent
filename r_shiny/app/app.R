@@ -1,959 +1,411 @@
-# ╔══════════════════════════════════════════════════════════════════╗
-# ║  📐 Riy_Muellim_Agent — AI Riyaziyyat Müəllim Paneli           ║
-# ║  ARTI 2026 © Tariyel Talibov                                    ║
-# ║                                                                  ║
-# ║  Xüsusiyyətlər:                                                 ║
-# ║  • Dərslikdən sinif/mövzu seçimi (JSON chunk-lardan)            ║
-# ║  • Claude AI ilə tapşırıq/test/dərs planı generasiyası         ║
-# ║  • Bloom taksonomiyası + DOK səviyyələri                        ║
-# ║  • PISA/TIMSS/Sinqapur beynəlxalq standartlar                  ║
-# ║  • Nəfis HTML5 çıxış formatı                                    ║
-# ╚══════════════════════════════════════════════════════════════════╝
+# Riy_Muellim_Agent v3.0 — Token/Vaxt + Fayl Saxlama
+# ARTI 2026 (c) Tariyel Talibov
 
 library(shiny)
-library(jsonlite)
+library(shinydashboard)
+library(DT)
+library(plotly)
 library(httr)
+library(jsonlite)
 
-# ─── KONFİQURASİYA ────────────────────────────────────────────
-APP_DIR    <- normalizePath(file.path(dirname(sys.frame(1)$ofile %||% "."), "..",".."), mustWork = FALSE)
-if (!dir.exists(file.path(APP_DIR, "derslikler"))) {
-  APP_DIR <- normalizePath("~/Desktop/Riy_Muellim_Agent", mustWork = FALSE)
-}
-CHUNKS_DIR <- file.path(APP_DIR, "derslikler", "chunks")
-
-# Claude API konfiqurasiyası
-# .env fayldan API acarlari oxu
+APP_DIR <- normalizePath("~/Desktop/Riy_Muellim_Agent", mustWork=FALSE)
 env_file <- file.path(APP_DIR, ".env")
-if (file.exists(env_file)) {
-  env_lines <- readLines(env_file, warn = FALSE)
-  for (line in env_lines) {
-    line <- trimws(line)
-    if (nchar(line) > 0 && !startsWith(line, "#") && grepl("=", line)) {
-      parts <- strsplit(line, "=", fixed = TRUE)[[1]]
-      key <- trimws(parts[1])
-      val <- trimws(paste(parts[-1], collapse = "="))
-      do.call(Sys.setenv, setNames(list(val), key))
-    }
-  }
-  message("OK: .env yuklendi: ", env_file)
-}
-CLAUDE_API_KEY  <- Sys.getenv("ANTHROPIC_API_KEY", "")
-CLAUDE_MODEL    <- "claude-sonnet-4-5-20250514"
+if(file.exists(env_file)) for(line in readLines(env_file,warn=FALSE)){
+  line<-trimws(line); if(nchar(line)>0&&!startsWith(line,"#")&&grepl("=",line)){
+    p<-strsplit(line,"=",fixed=TRUE)[[1]]; do.call(Sys.setenv,setNames(list(trimws(paste(p[-1],collapse="="))),trimws(p[1])))}}
+
+CHUNKS_DIR <- file.path(APP_DIR,"derslikler","chunks")
+CLAUDE_MODEL <- Sys.getenv("DEFAULT_AI_MODEL", "claude-3-haiku-20240307")
 CLAUDE_ENDPOINT <- "https://api.anthropic.com/v1/messages"
+DERS_DIR <- file.path(APP_DIR,"Ders_planlari")
+TEST_DIR <- file.path(APP_DIR,"Testler")
+dir.create(DERS_DIR, showWarnings=FALSE, recursive=TRUE)
+dir.create(TEST_DIR, showWarnings=FALSE, recursive=TRUE)
 
-# ─── STANDARTLAR ──────────────────────────────────────────────
-STANDARDS <- list(
-  "1" = list(
-    "Ədədlər və əməllər" = "R1.1 — Natural ədədləri 100 daxilində tanıyır, sayır, müqayisə edir, toplama-çıxma",
-    "Həndəsə" = "R1.3 — Sadə həndəsi fiqurları (dairə, üçbucaq, düzbucaqlı, kvadrat) tanıyır",
-    "Ölçmə" = "R1.5 — Uzunluğu qeyri-standart vahidlərlə ölçür, müqayisə edir"
-  ),
-  "2" = list(
-    "Ədədlər və əməllər" = "R2.1 — Natural ədədləri 1000 daxilində tanıyır, toplama-çıxma əməlləri aparır",
-    "Həndəsə" = "R2.3 — Həndəsi fiqurların xassələrini müqayisə edir, simmetriya",
-    "Ölçmə" = "R2.5 — Uzunluq (sm, m), kütlə (kq, q) vahidlərini bilir"
-  ),
-  "3" = list(
-    "Ədədlər və əməllər" = "R3.1 — Çoxrəqəmli ədədlərlə toplama, çıxma; vurma cədvəli, sadə bölmə",
-    "Həndəsə" = "R3.3 — Perimetri hesablayır, simmetriya oxu tapır",
-    "Ölçmə" = "R3.5 — Zaman (saat, dəq, san), pul (manat, qəpik) vahidləri ilə əməllər"
-  ),
-  "4" = list(
-    "Ədədlər və əməllər" = "R4.1 — Çoxrəqəmli ədədlərlə vurma, bölmə; sadə kəsrlər, onluq kəsrlərə giriş",
-    "Həndəsə" = "R4.3 — Düzbucaqlı və kvadratın sahəsini hesablayır, bucaq ölçür",
-    "Ölçmə" = "R4.5 — Həcm, tutum vahidləri (litr, ml), çevirmələr"
-  ),
-  "5" = list(
-    "Ədədlər və əməllər" = "R5.1 — Onluq kəsrlər, adi kəsrlər, əməllər, müqayisə, yuvarlaqlaşdırma",
-    "Cəbr" = "R5.2 — Sadə tənliklər, bərabərsizliklər, dəyişən anlayışı",
-    "Həndəsə" = "R5.3 — Üçbucaq və dördbucaqlıların perimetri, sahəsi; çevrə uzunluğu",
-    "Statistika" = "R5.4 — Sütunlu və dairəvi diaqramlar, orta ədəd hesablanması"
-  ),
-  "6" = list(
-    "Ədədlər və əməllər" = "R6.1 — Müsbət/mənfi ədədlər, rasional ədədlər, faiz, nisbət, tənasüb",
-    "Cəbr" = "R6.2 — Cəbri ifadələr, xətti tənliklər, bərabərsizliklər",
-    "Həndəsə" = "R6.3 — Bucaqlar, paralel xətlər, üçbucaq xassələri, simmetriya",
-    "Statistika" = "R6.4 — Statistik verilənlər, median, moda, orta hesabi"
-  ),
-  "7" = list(
-    "Ədədlər və əməllər" = "R7.1 — Nisbət, tənasüb, düz/tərs mütənasiblik, faiz hesablamaları",
-    "Cəbr" = "R7.2 — Xətti funksiya, qrafik qurmaq, tənliklər sistemi",
-    "Həndəsə" = "R7.3 — Çevrə, dairə sahəsi, Pifaqor teoreminə giriş",
-    "Statistika" = "R7.4 — Ehtimal anlayışı, klassik ehtimal, kombinatorika əsasları"
-  ),
-  "8" = list(
-    "Cəbr" = "R8.1 — Kvadrat köklər, irrasional ədədlər, çoxhədlilər, vuruqlara ayırma",
-    "Həndəsə" = "R8.2 — Pifaqor teoremi, oxşar üçbucaqlar, vektor anlayışı",
-    "Statistika" = "R8.3 — Ehtimal, statistik yayılma göstəriciləri"
-  ),
-  "9" = list(
-    "Cəbr" = "R9.1 — Kvadrat tənliklər, diskriminant, Vyet teoremi, tənliklər sistemi",
-    "Həndəsə" = "R9.2 — Triqonometriya (sin, cos, tg), vektor əməlləri, koordinat metodu",
-    "Statistika" = "R9.3 — Kombinatorika (yerləşdirmə, birləşmə), ehtimal nəzəriyyəsi"
-  ),
-  "10" = list(
-    "Cəbr" = "R10.1 — Triqonometrik, göstərici, loqarifmik funksiyalar və tənliklər",
-    "Həndəsə" = "R10.2 — Fəza həndəsəsi: prizma, piramida, həcm və sahə",
-    "Statistika" = "R10.3 — Statistik paylanmalar, standart kənarlaşma, reqressiya"
-  ),
-  "11" = list(
-    "Cəbr" = "R11.1 — Limit, törəmə, inteqral, tətbiqləri",
-    "Həndəsə" = "R11.2 — Silindr, konus, kürə; fırlanma cisimləri, həcm",
-    "Statistika" = "R11.3 — Ehtimal nəzəriyyəsi, böyük ədədlər qanunu, normal paylanma"
-  )
-)
+`%||%` <- function(x,y) if(is.null(x)||length(x)==0||(is.character(x)&&all(nchar(x)==0))) y else x
 
-# ─── CHUNK OXUMA FUNKSİYALARI ────────────────────────────────
-
-load_chunks_for_grade <- function(grade) {
-  pattern <- sprintf("sinif%d_.*_chunks\\.json$", grade)
-  files <- list.files(CHUNKS_DIR, pattern = pattern, full.names = TRUE)
-  all_chunks <- list()
-  for (f in files) {
-    tryCatch({
-      chunks <- fromJSON(f, simplifyVector = FALSE)
-      all_chunks <- c(all_chunks, chunks)
-    }, error = function(e) {
-      message("Chunk oxuma xətası: ", f, " — ", e$message)
-    })
-  }
-  all_chunks
+# === STANDARDS ===
+ALL_STANDARDS <- tryCatch(fromJSON(file.path(APP_DIR,"derslikler","standards.json"),simplifyVector=FALSE),error=function(e) list())
+get_standards_dropdown <- function(grade){
+  stds <- ALL_STANDARDS[[as.character(grade)]]
+  if(is.null(stds)||length(stds)==0) return(c("---"="---"))
+  ch <- character(0)
+  for(s in stds){label<-sprintf("%s [%s] %s",s$kod%||%"?",s$sahe%||%"?",s$metn%||%"?");val<-sprintf("%s - %s",s$kod%||%"?",s$metn%||%"?");ch<-c(ch,setNames(val,label))}
+  ch
 }
 
-get_topics_for_grade <- function(grade) {
-  chunks <- load_chunks_for_grade(grade)
-  topics <- unique(sapply(chunks, function(c) {
-    ch <- c$chapter
-    if (!is.null(ch) && nchar(ch) > 0) ch else c$topic
-  }))
-  topics <- topics[!is.na(topics) & nchar(topics) > 0]
-  topics <- topics[order(topics)]
-  if (length(topics) == 0) topics <- c("Mövzu tapılmadı")
-  topics
+# === TOPICS ===
+ALL_TOPICS <- tryCatch(fromJSON(file.path(APP_DIR,"derslikler","topics.json"),simplifyVector=FALSE),error=function(e) list())
+get_topics_for_grade <- function(grade){
+  gd <- ALL_TOPICS[[as.character(grade)]]
+  if(is.null(gd)) return(c("---"="---"))
+  ch <- character(0)
+  for(b in gd$bolmeler){bn<-b$bolme%||%"?"
+    for(m in b$movzular){label<-sprintf("[%s] %s (seh. %s)",bn,m$ad%||%"?",m$seh%||%"?");ch<-c(ch,setNames(m$ad%||%"?",label))}}
+  if(length(ch)==0) return(c("---"="---"))
+  ch
 }
 
-search_chunks <- function(grade, topic, max_results = 3) {
-  chunks <- load_chunks_for_grade(grade)
-  if (length(chunks) == 0) return(list())
-  
-  topic_lower <- tolower(topic)
-  topic_words <- strsplit(topic_lower, "\\s+")[[1]]
-  topic_words <- topic_words[nchar(topic_words) >= 3]
-  
-  scored <- list()
-  for (ch in chunks) {
-    score <- 0
-    searchable <- tolower(paste(
-      ch$text %||% "", ch$topic %||% "", ch$chapter %||% "",
-      paste(ch$keywords %||% character(0), collapse = " ")
-    ))
-    if (grepl(topic_lower, searchable, fixed = TRUE)) score <- score + 10
-    for (w in topic_words) {
-      score <- score + min(length(gregexpr(w, searchable, fixed = TRUE)[[1]]), 5)
-    }
-    ch_title <- tolower(ch$chapter %||% "")
-    if (nchar(ch_title) > 0 && grepl(topic_lower, ch_title, fixed = TRUE)) score <- score + 15
-    if (score > 0) scored <- c(scored, list(list(score = score, chunk = ch)))
-  }
-  
-  scored <- scored[order(-sapply(scored, function(x) x$score))]
-  lapply(head(scored, max_results), function(x) x$chunk)
+# === CHUNKS ===
+load_chunks_for_grade <- function(gr){
+  fs<-list.files(CHUNKS_DIR,pattern=sprintf("sinif%d_.*\\.json$",gr),full.names=TRUE)
+  out<-list(); for(f in fs) tryCatch({out<-c(out,fromJSON(f,simplifyVector=FALSE))},error=function(e){}); out
+}
+search_chunks <- function(gr,topic,mx=3){
+  chs<-load_chunks_for_grade(gr); if(length(chs)==0) return(list())
+  tl<-tolower(topic);tw<-strsplit(tl,"\\s+")[[1]];tw<-tw[nchar(tw)>=3]
+  sc<-list()
+  for(c in chs){s<-0;bl<-tolower(paste(c$text%||%"",c$topic%||%"",c$chapter%||%"",paste(c$keywords%||%character(0),collapse=" ")))
+    if(grepl(tl,bl,fixed=TRUE)) s<-s+10; for(w in tw) s<-s+min(length(gregexpr(w,bl,fixed=TRUE)[[1]]),5)
+    if(nchar(c$chapter%||%"")>0&&grepl(tl,tolower(c$chapter),fixed=TRUE)) s<-s+15
+    if(s>0) sc<-c(sc,list(list(score=s,chunk=c)))}
+  sc<-sc[order(-sapply(sc,function(x) x$score))]; lapply(head(sc,mx),function(x) x$chunk)
+}
+build_context <- function(gr,topic){
+  res<-search_chunks(gr,topic); if(length(res)==0) return(sprintf("[Sinif %d, '%s' - kontekst yoxdur]",gr,topic))
+  pts<-character(0)
+  for(c in res){tx<-c$text%||%"";if(nchar(tx)>4000)tx<-paste0(substr(tx,1,4000),"\n...")
+    pts<-c(pts,sprintf("\n--- Derslik: %s, seh. %s-%s ---\nFesil: %s\nAcar: %s\n\n%s\n",
+      c$source_file%||%"?",c$page_start%||%"?",c$page_end%||%"?",c$chapter%||%"-",paste(head(c$keywords%||%character(0),10),collapse=", "),tx))}
+  paste(pts,collapse="\n")
 }
 
-build_context <- function(grade, topic) {
-  results <- search_chunks(grade, topic)
-  if (length(results) == 0) return(sprintf("[Sinif %d, '%s' mövzusu üçün dərslik konteksti tapılmadı]", grade, topic))
-  
-  parts <- character(0)
-  for (ch in results) {
-    text <- ch$text %||% ""
-    if (nchar(text) > 4000) text <- paste0(substr(text, 1, 4000), "\n... [davamı dərslikdə]")
-    parts <- c(parts, sprintf(
-      "\n━━━ Dərslik: %s, səh. %d-%d ━━━\nFəsil: %s\nAçar sözlər: %s\n\n%s\n",
-      ch$source_file %||% "?", ch$page_start, ch$page_end,
-      ch$chapter %||% "—",
-      paste(head(ch$keywords %||% character(0), 10), collapse = ", "),
-      text
-    ))
-  }
-  paste(parts, collapse = "\n")
-}
-
-# ─── CLAUDE API ───────────────────────────────────────────────
-
-call_claude <- function(prompt, api_key) {
-  if (nchar(api_key) < 10) {
-    return(list(success = FALSE, error = "API açar daxil edilməyib. Yuxarıdakı sahəyə ANTHROPIC_API_KEY yazın."))
-  }
-  
+# =============================================
+# CLAUDE API — TOKEN + VAXT TRACKING
+# =============================================
+call_claude <- function(prompt){
+  key<-Sys.getenv("ANTHROPIC_API_KEY","")
+  if(nchar(key)<10) return(list(success=FALSE,error="ANTHROPIC_API_KEY .env-de yoxdur!",time_sec=0,input_tokens=0,output_tokens=0))
+  t0 <- proc.time()["elapsed"]
   tryCatch({
-    resp <- POST(
-      url = CLAUDE_ENDPOINT,
-      add_headers(
-        `x-api-key` = api_key,
-        `anthropic-version` = "2023-06-01",
-        `content-type` = "application/json"
-      ),
-      body = toJSON(list(
-        model = CLAUDE_MODEL,
-        max_tokens = 8000,
-        messages = list(list(role = "user", content = prompt))
-      ), auto_unbox = TRUE),
-      encode = "raw",
-      timeout(120)
-    )
-    
-    result <- content(resp, "parsed", encoding = "UTF-8")
-    
-    if (resp$status_code == 200) {
-      text <- result$content[[1]]$text
-      list(success = TRUE, text = text)
-    } else {
-      err_msg <- result$error$message %||% paste("HTTP", resp$status_code)
-      list(success = FALSE, error = err_msg)
-    }
-  }, error = function(e) {
-    list(success = FALSE, error = e$message)
+    r<-POST(CLAUDE_ENDPOINT,
+      add_headers(`x-api-key`=key,`anthropic-version`="2023-06-01",`content-type`="application/json"),
+      body=toJSON(list(model=CLAUDE_MODEL,max_tokens=4096,
+        messages=list(list(role="user",content=prompt))),auto_unbox=TRUE),
+      encode="raw",timeout(180))
+    elapsed <- round(as.numeric(proc.time()["elapsed"] - t0), 1)
+    res<-content(r,"parsed",encoding="UTF-8")
+    inp_tok <- res$usage$input_tokens %||% 0
+    out_tok <- res$usage$output_tokens %||% 0
+    if(r$status_code==200) list(success=TRUE, text=res$content[[1]]$text,
+      time_sec=elapsed, input_tokens=inp_tok, output_tokens=out_tok)
+    else list(success=FALSE, error=res$error$message%||%paste("HTTP",r$status_code),
+      time_sec=elapsed, input_tokens=inp_tok, output_tokens=out_tok)
+  },error=function(e){
+    elapsed <- round(as.numeric(proc.time()["elapsed"] - t0), 1)
+    list(success=FALSE,error=e$message,time_sec=elapsed,input_tokens=0,output_tokens=0)
   })
 }
 
-# ─── PROMPT BUİLDERLƏR ───────────────────────────────────────
+# =============================================
+# FAYL SAXLAMA: HTML + DOCX
+# =============================================
+save_result <- function(html_content, folder, grade, topic, type_label) {
+  ts <- format(Sys.time(), "%Y%m%d_%H%M%S")
+  safe_topic <- gsub("[^a-zA-Z0-9_-]", "_", iconv(topic, to="ASCII//TRANSLIT"))
+  safe_topic <- substr(safe_topic, 1, 40)
+  base_name <- sprintf("sinif%d_%s_%s_%s", grade, safe_topic, type_label, ts)
 
-build_test_prompt <- function(grade, topic, standard, context, count, blooms, dok, difficulty) {
-  bloom_str <- paste(blooms, collapse = ", ")
-  
-  sprintf('Sən Azərbaycan Riyaziyyat müəllimlər üçün dünya standartlarında test tapşırıqları yaradan ekspert AI-san.
+  full_html <- paste0('<!DOCTYPE html><html lang="az"><head><meta charset="UTF-8">',
+    '<meta name="viewport" content="width=device-width, initial-scale=1.0">',
+    '<title>ARTI 2026 - Sinif ', grade, ' - ', topic, '</title>',
+    HTML5_CSS, '</head><body><div class="ai-output">', html_content,
+    '</div><div class="arti-footer">ARTI 2026 | ', base_name, '</div></body></html>')
 
-SİNİF: %d-ci sinif
-MÖVZU: %s
-STANDART: %s
-TAPŞIRIQ SAYI: %d
-BLOOM SEVİYYƏLƏRİ: %s
-DOK SEVİYYƏSİ: %d
-ÇƏTİNLİK: %s
+  # HTML saxla
+  html_path <- file.path(folder, paste0(base_name, ".html"))
+  writeLines(full_html, html_path, useBytes=TRUE)
+  message("HTML saxlandi: ", html_path)
 
-═══ DƏRSLİKDƏN KONTEKST ═══
-%s
+  # DOCX (pandoc ile)
+  docx_path <- file.path(folder, paste0(base_name, ".docx"))
+  tryCatch({
+    tmp_html <- tempfile(fileext=".html")
+    writeLines(full_html, tmp_html, useBytes=TRUE)
+    pandoc <- Sys.which("pandoc")
+    if(nchar(pandoc) == 0) pandoc <- file.path(Sys.getenv("RSTUDIO_PANDOC",""), "pandoc")
+    if(nchar(pandoc) > 0 && file.exists(pandoc)) {
+      system2(pandoc, c("-f","html","-t","docx","-o",docx_path,tmp_html), stderr=FALSE, stdout=FALSE)
+      if(file.exists(docx_path)) message("DOCX saxlandi: ", docx_path)
+      else message("DOCX yaradila bilmedi")
+    } else {
+      # pandoc yoxdursa rmarkdown-dan istifade et
+      tryCatch({
+        pandoc2 <- rmarkdown::find_pandoc()$dir
+        if(!is.null(pandoc2)) {
+          system2(file.path(pandoc2,"pandoc"), c("-f","html","-t","docx","-o",docx_path,tmp_html), stderr=FALSE, stdout=FALSE)
+          if(file.exists(docx_path)) message("DOCX saxlandi (rmarkdown pandoc): ", docx_path)
+        }
+      }, error=function(e2) message("DOCX: pandoc tapilmadi, yalniz HTML saxlandi"))
+    }
+    unlink(tmp_html)
+  }, error=function(e) message("DOCX xetasi: ", e$message))
 
-═══ TƏLİMAT ═══
-
-%d tapşırıq yarat. NƏTİCƏNİ TAM HTML FORMATINDA VER. Aşağıdakı HTML şablonuna uyğun yaz.
-Cavabın YÜZ FАİZ HTML olsun, heç bir markdown olmasın.
-
-QAYDALAR:
-1. Dərslikdəki TERMİNOLOGİYANI istifadə et
-2. Dərslik SƏHİFƏ NÖMRƏSİNƏ istinad et
-3. Real həyat konteksti: Bakı, manat, Xəzər, metro, ASAN xidmət
-4. Hər tapşırığın cavab açarı + həlli olsun
-5. Açıq cavablarda rubrika (0-1-2-3 bal)
-6. Distraktor analizi (çoxseçimli suallarda)
-
-HTML FORMATI:
-
-<div class="test-header">
-  <h1>📐 Riyaziyyat Test Tapşırıqları</h1>
-  <div class="meta-grid">
-    <div class="meta-item"><span class="label">Sinif:</span> %d-ci sinif</div>
-    <div class="meta-item"><span class="label">Mövzu:</span> %s</div>
-    <div class="meta-item"><span class="label">Standart:</span> %s</div>
-    <div class="meta-item"><span class="label">Tapşırıq sayı:</span> %d</div>
-  </div>
-</div>
-
-Hər tapşırıq üçün:
-<div class="question-block bloom-[səviyyə]">
-  <div class="question-header">
-    <span class="bloom-badge">[EMOJI] BLOOM: [SƏVİYYƏ]</span>
-    <span class="dok-badge">DOK-[N]</span>
-  </div>
-  <div class="question-text">
-    <strong>[N].</strong> [Tapşırıq mətni]
-  </div>
-  <div class="options"> (çoxseçimli üçün)
-    <div class="option">A) ...</div>
-    <div class="option">B) ...</div>
-    <div class="option">C) ...</div>
-    <div class="option">D) ...</div>
-  </div>
-  <div class="answer-box">
-    <div class="answer">✅ Cavab: [X]</div>
-    <div class="solution">📝 Həll: [addım-addım]</div>
-    <div class="textbook-ref">📖 Dərslik: səh. XX</div>
-    <div class="difficulty">📊 Çətinlik: [asan/orta/çətin] │ ⏱️ [X] dəq │ 🎯 [X] bal</div>
-  </div>
-</div>
-
-Sonda statistika:
-<div class="stats-block">
-  <h3>📊 Test Statistikası</h3>
-  <div class="stat-row">Bloom paylanması: ...</div>
-  <div class="stat-row">DOK paylanması: ...</div>
-  <div class="stat-row">🌍 PISA ✅ TIMSS ✅ Sinqapur ✅ Finlandiya ✅</div>
-</div>
-
-Bloom emoji-ləri: 🟤Xatırlama, 🟢Anlama, 🔵Tətbiqetmə, 🟡Təhlil, 🟠Qiymətləndirmə, 🔴Yaratma',
-    grade, topic, standard, count, bloom_str, dok, difficulty,
-    context, count, grade, topic, standard, count
-  )
+  list(html=html_path, docx=if(file.exists(docx_path)) docx_path else NA)
 }
 
-build_lesson_prompt <- function(grade, topic, standard, context, duration, blooms, dok) {
-  bloom_str <- paste(blooms, collapse = ", ")
-  
-  sprintf('Sən Finlandiya+Sinqapur modelində dünya standartlarında dərs planları hazırlayan metodist AI-san.
+# =============================================
+# STATS BAR HTML (token + vaxt + fayl)
+# =============================================
+make_stats_bar <- function(time_sec, input_tokens, output_tokens, html_path, docx_path) {
+  total_tok <- input_tokens + output_tokens
+  # Approximate cost: Sonnet input=$3/M, output=$15/M
+  cost_usd <- round((input_tokens * 3 + output_tokens * 15) / 1000000, 4)
 
-SİNİF: %d-ci sinif
-MÖVZU: %s
-STANDART: %s
-MÜDDƏT: %d dəqiqə
-BLOOM: %s
-DOK: %d
+  docx_info <- if(!is.na(docx_path) && file.exists(docx_path)) {
+    sprintf('<span style="margin-left:20px;">&#128196; DOCX: %s</span>', basename(docx_path))
+  } else ""
 
-═══ DƏRSLİKDƏN KONTEKST ═══
-%s
-
-═══ TƏLİMAT ═══
-
-%d dəqiqəlik dərs planı yarat. NƏTİCƏNİ TAM HTML FORMATINDA VER.
-Cavabın YÜZ FАİZ HTML olsun, heç bir markdown olmasın.
-
-QAYDALAR:
-1. Dərslikdəki terminologiya, tapşırıq nömrələri, səhifə istinadları
-2. Sinqapur CPA: Konkret → Təsviri → Mücərrəd
-3. Diferensiasiya: 🟢Baza / 🟡Orta / 🔴Yüksək
-4. Hər mərhələdə: müəllim + şagird fəaliyyəti + vaxt + qiymətləndirmə
-
-HTML FORMATI:
-
-<div class="lesson-header">
-  <h1>📐 Dərs Planı</h1>
-  <div class="meta-grid">
-    <div class="meta-item"><span class="label">Sinif:</span> %d-ci sinif</div>
-    <div class="meta-item"><span class="label">Mövzu:</span> %s</div>
-    <div class="meta-item"><span class="label">Müddət:</span> %d dəqiqə</div>
-    <div class="meta-item"><span class="label">Standart:</span> %s</div>
-  </div>
-  <div class="objectives">
-    <h3>🎯 Təlim Nəticələri</h3>
-    <ul>
-      <li>[Bilik — Bloom: Xatırlama]</li>
-      <li>[Bacarıq — Bloom: Tətbiqetmə]</li>
-      <li>[Tətbiq — Bloom: Təhlil]</li>
-    </ul>
-  </div>
-</div>
-
-5 mərhələ, hər biri <div class="phase"> içində:
-
-<div class="phase phase-1">
-  <div class="phase-header">
-    <span class="phase-icon">📍</span>
-    <h3>MƏRHƏLƏ 1: MOTİVASİYA</h3>
-    <span class="phase-time">⏱️ %d dəq</span>
-  </div>
-  <div class="phase-content">
-    <div class="teacher-activity">👨‍🏫 Müəllim: ...</div>
-    <div class="student-activity">👨‍🎓 Şagird: ...</div>
-    <div class="textbook-ref">📖 Dərslik: səh. XX</div>
-    <div class="assessment">📊 Qiymətləndirmə: diaqnostik</div>
-  </div>
-</div>
-
-Mərhələlər:
-1. Motivasiya (10%% — %d dəq) — dərslikdən "Araşdır", real həyat sualı
-2. Yeni bilik (30%% — %d dəq) — Sinqapur CPA, kəşf, qrup işi, lövhə yazısı
-3. Birgə tətbiq (25%% — %d dəq) — Mən→Biz→Sən, dərslikdən tapşırıqlar
-4. Müstəqil tətbiq (25%% — %d dəq) — 🟢Baza/🟡Orta/🔴Yüksək, PISA tipli
-5. Yekunlaşdırma (10%% — %d dəq) — çıxış bileti, ev tapşırığı
-
-Sonda analiz bloku:
-<div class="analysis-block">
-  <h3>📊 Dərs Analizi</h3>
-  <div class="stat-row">Bloom paylanması: ...</div>
-  <div class="stat-row">Zaman: Müəllim 30%% │ Şagird 50%% │ Müzakirə 20%%</div>
-  <div class="stat-row">📖 Dərslik istinadları: səh. ...</div>
-  <div class="stat-row">🌍 PISA ✅ TIMSS ✅ Sinqapur CPA ✅ Finlandiya ✅</div>
-</div>',
-    grade, topic, standard, duration, bloom_str, dok,
-    context, duration,
-    grade, topic, duration, standard,
-    as.integer(duration * 0.10),
-    as.integer(duration * 0.10),
-    as.integer(duration * 0.30),
-    as.integer(duration * 0.25),
-    as.integer(duration * 0.25),
-    as.integer(duration * 0.10)
-  )
+  sprintf('<div style="background:linear-gradient(135deg,#1e293b,#334155);color:#e2e8f0;padding:16px 24px;border-radius:12px;margin-top:20px;font-size:1.1em;display:flex;flex-wrap:wrap;gap:20px;align-items:center;">
+    <span>&#9201; <strong>Vaxt:</strong> %.1f san</span>
+    <span>&#128229; <strong>Giri&#351;:</strong> %s token</span>
+    <span>&#128228; <strong>&#199;&#305;x&#305;&#351;:</strong> %s token</span>
+    <span>&#128202; <strong>C&#601;mi:</strong> %s token</span>
+    <span>&#128176; <strong>T&#601;xmini:</strong> $%s</span>
+    <span style="margin-left:auto;">&#128196; HTML: %s</span>
+    %s
+  </div>', time_sec,
+    formatC(input_tokens, format="d", big.mark=","),
+    formatC(output_tokens, format="d", big.mark=","),
+    formatC(total_tok, format="d", big.mark=","),
+    cost_usd, basename(html_path), docx_info)
 }
 
-# ─── HTML5 STIL ───────────────────────────────────────────────
-
-HTML5_CSS <- '
-<style>
+# === HTML5 CSS (30% BOYUK) ===
+HTML5_CSS <- '<style>
 @import url("https://fonts.googleapis.com/css2?family=Noto+Sans:wght@400;600;700&family=JetBrains+Mono&display=swap");
+.ai-output{font-family:"Noto Sans",sans-serif;color:#1a1a2e;font-size:1.30em;line-height:1.90}
+.test-header,.lesson-header{background:linear-gradient(135deg,#0a1628,#1a365d,#2d3748);color:#fff;padding:32px;border-radius:14px;margin-bottom:28px;box-shadow:0 8px 32px rgba(0,0,0,.18);position:relative;overflow:hidden}
+.test-header::before,.lesson-header::before{content:"";position:absolute;top:-50%;right:-20%;width:400px;height:400px;background:radial-gradient(circle,rgba(59,130,246,.15) 0%,transparent 70%);border-radius:50%}
+.test-header h1,.lesson-header h1{font-size:2.10em;font-weight:700;margin:0 0 18px}
+.meta-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px}
+.meta-item{background:rgba(255,255,255,.08);padding:10px 16px;border-radius:8px;border-left:3px solid #3b82f6;font-size:1.17em}
+.meta-item .label{font-weight:700;color:#93c5fd}
+.objectives{margin-top:18px;background:rgba(255,255,255,.06);padding:16px 20px;border-radius:10px}
+.objectives h3{margin:0 0 10px;color:#fbbf24;font-size:1.37em}
+.objectives li{margin-bottom:6px;color:#e2e8f0;font-size:1.17em}
+.question-block{background:#fff;border-radius:14px;padding:24px;margin-bottom:20px;box-shadow:0 2px 12px rgba(0,0,0,.06);border-left:5px solid #94a3b8;transition:transform .2s}
+.question-block:hover{transform:translateY(-2px);box-shadow:0 6px 24px rgba(0,0,0,.10)}
+.bloom-xatirlama{border-left-color:#78350f}.bloom-anlama{border-left-color:#15803d}.bloom-tetbiqetme{border-left-color:#1d4ed8}
+.bloom-tehlil{border-left-color:#a16207}.bloom-qiymetlendirme{border-left-color:#c2410c}.bloom-yaratma{border-left-color:#dc2626}
+.question-header{display:flex;gap:10px;margin-bottom:14px;flex-wrap:wrap}
+.bloom-badge,.dok-badge{display:inline-block;padding:5px 14px;border-radius:18px;font-size:1.04em;font-weight:700}
+.bloom-badge{background:#eff6ff;color:#1e40af}.dok-badge{background:#fef3c7;color:#92400e}
+.question-text{font-size:1.33em;margin-bottom:16px;line-height:1.95}
+.options{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px}
+.option{background:#f8fafc;padding:12px 18px;border-radius:8px;border:1px solid #e2e8f0;font-size:1.24em}
+.answer-box{background:linear-gradient(135deg,#f0fdf4,#ecfdf5);border:1px solid #86efac;border-radius:10px;padding:18px}
+.answer-box .answer{font-weight:700;color:#15803d;font-size:1.30em;margin-bottom:8px}
+.answer-box .solution{color:#374151;margin-bottom:6px;white-space:pre-wrap;font-size:1.20em}
+.answer-box .textbook-ref{color:#1d4ed8;font-weight:600;font-size:1.17em}
+.answer-box .difficulty{color:#6b7280;font-size:1.10em}
+.phase{background:#fff;border-radius:14px;padding:24px;margin-bottom:18px;box-shadow:0 2px 12px rgba(0,0,0,.06);border-left:5px solid #3b82f6}
+.phase-1{border-left-color:#f59e0b}.phase-2{border-left-color:#3b82f6}.phase-3{border-left-color:#10b981}.phase-4{border-left-color:#8b5cf6}.phase-5{border-left-color:#ef4444}
+.phase-header{display:flex;align-items:center;gap:12px;margin-bottom:16px}
+.phase-header h3{margin:0;font-size:1.43em;flex-grow:1}
+.phase-time{background:#f1f5f9;padding:5px 14px;border-radius:16px;font-size:1.07em;font-weight:600;color:#475569}
+.teacher-activity,.student-activity,.phase .textbook-ref,.assessment{padding:10px 16px;margin-bottom:8px;border-radius:8px;font-size:1.20em}
+.teacher-activity{background:#eff6ff;border-left:3px solid #3b82f6}
+.student-activity{background:#f0fdf4;border-left:3px solid #22c55e}
+.phase .textbook-ref{background:#fefce8;border-left:3px solid #eab308;color:#854d0e;font-weight:600}
+.assessment{background:#faf5ff;border-left:3px solid #a855f7}
+.differentiation{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin:12px 0}
+.diff-level{padding:14px;border-radius:10px;font-size:1.17em}
+.diff-base{background:#f0fdf4;border:1px solid #86efac}.diff-mid{background:#fffbeb;border:1px solid #fde68a}.diff-high{background:#fef2f2;border:1px solid #fca5a5}
+.stats-block,.analysis-block{background:linear-gradient(135deg,#0a1628,#1e293b);color:#e2e8f0;padding:24px;border-radius:14px;margin-top:24px}
+.stats-block h3,.analysis-block h3{margin:0 0 16px;color:#fbbf24;font-size:1.43em}
+.stat-row{padding:8px 0;border-bottom:1px solid rgba(255,255,255,.08);font-size:1.17em}
+.stat-row:last-child{border-bottom:none}
+.arti-footer{text-align:center;margin-top:30px;padding:16px;color:#94a3b8;font-size:1.04em;border-top:2px solid #e2e8f0}
+@media print{.answer-box,.question-block,.phase{page-break-inside:avoid}.ai-output{font-size:12pt}}
+</style>'
 
-.ai-output {
-  font-family: "Noto Sans", sans-serif;
-  color: #1a1a2e;
-  line-height: 1.7;
-  padding: 30px;
-  max-width: 900px;
-  margin: 0 auto;
-}
+# === PROMPT BUILDERS ===
+build_test_prompt <- function(grade,topic,standard,context,count,blooms,dok){paste0(
+'Sen Azerbaijan Riyaziyyat muellimler ucun test tapshiriqlari yaradan ekspert AI-san.
+SINIF: ',grade,' | MOVZU: ',topic,' | STANDART: ',standard,' | SAY: ',count,' | BLOOM: ',paste(blooms,collapse=", "),' | DOK: ',dok,'
+DERSLIKDEN KONTEKST:\n',context,'
+TELIMATLAR: ',count,' tapshiriq yarat. NETICENI TAM HTML FORMATINDA VER (markdown yox).
+QAYDALAR: 1)Derslik terminologiyasi 2)Sehife istinadi 3)Real heyat:Baki,manat,Xezer 4)Cavab+hell 5)Rubrika(aciq) 6)Distraktor analizi
+HTML: <div class="test-header"><h1>Riyaziyyat Test</h1><div class="meta-grid">
+<div class="meta-item"><span class="label">Sinif:</span> ',grade,'-ci</div>
+<div class="meta-item"><span class="label">Movzu:</span> ',topic,'</div>
+<div class="meta-item"><span class="label">Standart:</span> ',standard,'</div>
+<div class="meta-item"><span class="label">Say:</span> ',count,'</div></div></div>
+Her tapshiriq: <div class="question-block bloom-[seviyye]">
+<div class="question-header"><span class="bloom-badge">[BLOOM]</span><span class="dok-badge">DOK-[N]</span></div>
+<div class="question-text"><strong>[N].</strong> [metn]</div>
+<div class="options"><div class="option">A)...</div>...</div>
+<div class="answer-box"><div class="answer">Cavab: [X]</div><div class="solution">Hell: ...</div>
+<div class="textbook-ref">Derslik: seh. XX</div><div class="difficulty">Cetinlik: ... | deq | bal</div></div></div>
+Sonda: <div class="stats-block"><h3>Statistika</h3><div class="stat-row">Bloom...</div><div class="stat-row">DOK...</div></div>')}
 
-/* HEADER */
-.test-header, .lesson-header {
-  background: linear-gradient(135deg, #0a1628 0%, #1a365d 50%, #2d3748 100%);
-  color: #fff;
-  padding: 32px;
-  border-radius: 16px;
-  margin-bottom: 28px;
-  box-shadow: 0 8px 32px rgba(0,0,0,0.18);
-  position: relative;
-  overflow: hidden;
-}
-.test-header::before, .lesson-header::before {
-  content: "";
-  position: absolute;
-  top: -50%; right: -20%;
-  width: 400px; height: 400px;
-  background: radial-gradient(circle, rgba(59,130,246,0.15) 0%, transparent 70%);
-  border-radius: 50%;
-}
-.test-header h1, .lesson-header h1 {
-  font-size: 1.8em;
-  font-weight: 700;
-  margin: 0 0 20px 0;
-  letter-spacing: -0.5px;
-}
-.meta-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: 12px;
-}
-.meta-item {
-  background: rgba(255,255,255,0.08);
-  padding: 10px 16px;
-  border-radius: 8px;
-  border-left: 3px solid #3b82f6;
-  font-size: 0.95em;
-}
-.meta-item .label {
-  font-weight: 700;
-  color: #93c5fd;
-}
+build_lesson_prompt <- function(grade,topic,standard,context,duration,blooms,dok){
+  m1<-as.integer(duration*.10);m2<-as.integer(duration*.30);m3<-as.integer(duration*.25);m4<-as.integer(duration*.25);m5<-as.integer(duration*.10)
+  paste0('Sen Finlandiya+Sinqapur modelinde ders planlari hazirlayan metodist AI-san.
+SINIF: ',grade,' | MOVZU: ',topic,' | STANDART: ',standard,' | MUDDET: ',duration,' deq | BLOOM: ',paste(blooms,collapse=", "),' | DOK: ',dok,'
+DERSLIKDEN KONTEKST:\n',context,'
+TELIMATLAR: ',duration,' deqiqelik ders plani yarat. TAM HTML FORMATINDA VER.
+QAYDALAR: 1)Derslik terminologiya+tapshiriq nomreleri 2)Sinqapur CPA 3)Diferensiasiya:Baza/Orta/Yuksek
+HTML: <div class="lesson-header"><h1>Ders Plani</h1><div class="meta-grid">
+<div class="meta-item"><span class="label">Sinif:</span> ',grade,'-ci</div>
+<div class="meta-item"><span class="label">Movzu:</span> ',topic,'</div>
+<div class="meta-item"><span class="label">Muddet:</span> ',duration,' deq</div>
+<div class="meta-item"><span class="label">Standart:</span> ',standard,'</div></div>
+<div class="objectives"><h3>Telim Neticeleri</h3><ul><li>[Bilik]</li><li>[Bacariq]</li><li>[Tetbiq]</li></ul></div></div>
+5 merhele: 1.Motivasiya(',m1,'deq) 2.Yeni bilik(',m2,'deq)-CPA 3.Birge(',m3,'deq) 4.Musteqil(',m4,'deq)-diferensiasiya 5.Yekun(',m5,'deq)
+Her merhele: <div class="phase phase-N"><div class="phase-header"><h3>MERHELE N: [AD]</h3><span class="phase-time">[X] deq</span></div>
+<div class="teacher-activity">Muellim: ...</div><div class="student-activity">Shagird: ...</div>
+<div class="textbook-ref">Derslik: seh. XX</div><div class="assessment">Qiymetlendirme: ...</div></div>
+Sonda: <div class="analysis-block"><h3>Ders Analizi</h3><div class="stat-row">Bloom...</div><div class="stat-row">Zaman...</div></div>')}
 
-/* OBJECTIVES */
-.objectives {
-  margin-top: 20px;
-  background: rgba(255,255,255,0.06);
-  padding: 16px 20px;
-  border-radius: 10px;
-}
-.objectives h3 { margin: 0 0 10px; color: #fbbf24; }
-.objectives ul { margin: 0; padding-left: 20px; }
-.objectives li { margin-bottom: 6px; color: #e2e8f0; }
-
-/* QUESTION BLOCKS */
-.question-block {
-  background: #fff;
-  border-radius: 14px;
-  padding: 24px;
-  margin-bottom: 20px;
-  box-shadow: 0 2px 12px rgba(0,0,0,0.06);
-  border-left: 5px solid #94a3b8;
-  transition: transform 0.2s, box-shadow 0.2s;
-}
-.question-block:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 6px 24px rgba(0,0,0,0.10);
-}
-.bloom-xatirlama, .bloom-xatırlama { border-left-color: #78350f; }
-.bloom-anlama { border-left-color: #15803d; }
-.bloom-tetbiqetme, .bloom-tətbiqetmə { border-left-color: #1d4ed8; }
-.bloom-tehlil, .bloom-təhlil { border-left-color: #a16207; }
-.bloom-qiymetlendirme, .bloom-qiymətləndirmə { border-left-color: #c2410c; }
-.bloom-yaratma { border-left-color: #dc2626; }
-
-.question-header {
-  display: flex;
-  gap: 10px;
-  margin-bottom: 14px;
-  flex-wrap: wrap;
-}
-.bloom-badge, .dok-badge {
-  display: inline-block;
-  padding: 4px 14px;
-  border-radius: 20px;
-  font-size: 0.82em;
-  font-weight: 700;
-  letter-spacing: 0.5px;
-}
-.bloom-badge { background: #f0f4ff; color: #1e40af; }
-.dok-badge { background: #fef3c7; color: #92400e; }
-
-.question-text {
-  font-size: 1.05em;
-  margin-bottom: 16px;
-  line-height: 1.8;
-}
-.options {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 8px;
-  margin-bottom: 16px;
-}
-.option {
-  background: #f8fafc;
-  padding: 10px 16px;
-  border-radius: 8px;
-  border: 1px solid #e2e8f0;
-  font-size: 0.95em;
-}
-
-/* ANSWER BOX */
-.answer-box {
-  background: linear-gradient(135deg, #f0fdf4 0%, #ecfdf5 100%);
-  border: 1px solid #86efac;
-  border-radius: 10px;
-  padding: 16px;
-}
-.answer-box .answer { font-weight: 700; color: #15803d; font-size: 1.05em; margin-bottom: 8px; }
-.answer-box .solution { color: #374151; margin-bottom: 6px; white-space: pre-wrap; }
-.answer-box .textbook-ref { color: #1d4ed8; font-weight: 600; margin-bottom: 4px; }
-.answer-box .difficulty { color: #6b7280; font-size: 0.9em; }
-.answer-box .rubric { margin-top: 8px; padding: 10px; background: #fffbeb; border-radius: 6px; border: 1px solid #fde68a; }
-
-/* PHASES */
-.phase {
-  background: #fff;
-  border-radius: 14px;
-  padding: 24px;
-  margin-bottom: 18px;
-  box-shadow: 0 2px 12px rgba(0,0,0,0.06);
-  border-left: 5px solid #3b82f6;
-}
-.phase-1 { border-left-color: #f59e0b; }
-.phase-2 { border-left-color: #3b82f6; }
-.phase-3 { border-left-color: #10b981; }
-.phase-4 { border-left-color: #8b5cf6; }
-.phase-5 { border-left-color: #ef4444; }
-
-.phase-header {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  margin-bottom: 16px;
-}
-.phase-header h3 { margin: 0; font-size: 1.1em; flex-grow: 1; }
-.phase-icon { font-size: 1.4em; }
-.phase-time {
-  background: #f1f5f9;
-  padding: 4px 12px;
-  border-radius: 16px;
-  font-size: 0.85em;
-  font-weight: 600;
-  color: #475569;
-}
-
-.teacher-activity, .student-activity, .textbook-ref, .assessment {
-  padding: 8px 14px;
-  margin-bottom: 8px;
-  border-radius: 8px;
-  font-size: 0.95em;
-}
-.teacher-activity { background: #eff6ff; border-left: 3px solid #3b82f6; }
-.student-activity { background: #f0fdf4; border-left: 3px solid #22c55e; }
-.textbook-ref { background: #fefce8; border-left: 3px solid #eab308; color: #854d0e; font-weight: 600; }
-.assessment { background: #faf5ff; border-left: 3px solid #a855f7; }
-
-.differentiation {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 12px;
-  margin: 12px 0;
-}
-.diff-level {
-  padding: 14px;
-  border-radius: 10px;
-  font-size: 0.92em;
-}
-.diff-base { background: #f0fdf4; border: 1px solid #86efac; }
-.diff-mid { background: #fffbeb; border: 1px solid #fde68a; }
-.diff-high { background: #fef2f2; border: 1px solid #fca5a5; }
-
-/* STATS */
-.stats-block, .analysis-block {
-  background: linear-gradient(135deg, #0a1628, #1e293b);
-  color: #e2e8f0;
-  padding: 24px;
-  border-radius: 14px;
-  margin-top: 24px;
-}
-.stats-block h3, .analysis-block h3 { margin: 0 0 16px; color: #fbbf24; }
-.stat-row {
-  padding: 8px 0;
-  border-bottom: 1px solid rgba(255,255,255,0.08);
-  font-size: 0.95em;
-}
-.stat-row:last-child { border-bottom: none; }
-
-/* FOOTER */
-.arti-footer {
-  text-align: center;
-  margin-top: 30px;
-  padding: 16px;
-  color: #94a3b8;
-  font-size: 0.85em;
-  border-top: 2px solid #e2e8f0;
-}
-
-/* PRINT */
-@media print {
-  .answer-box { page-break-inside: avoid; }
-  .question-block { page-break-inside: avoid; }
-  .phase { page-break-inside: avoid; }
-}
-</style>
-'
-
-# ─── NULL OPERATOR ────────────────────────────────────────────
-`%||%` <- function(x, y) if (is.null(x) || length(x) == 0 || (is.character(x) && nchar(x) == 0)) y else x
-
-# ═══════════════════════════════════════════════════════════════
+# ====================================================================
 # UI
-# ═══════════════════════════════════════════════════════════════
-ui <- fluidPage(
-  
-  tags$head(
-    tags$style(HTML('
-      @import url("https://fonts.googleapis.com/css2?family=Noto+Sans:wght@400;600;700&display=swap");
-      body { font-family: "Noto Sans", sans-serif; background: #f1f5f9; }
-      
-      .navbar { background: linear-gradient(135deg, #0a1628, #1a365d) !important; border: none; }
-      .navbar-brand { color: #fff !important; font-weight: 700; font-size: 1.3em !important; }
-      .navbar-nav > li > a { color: #cbd5e1 !important; font-weight: 600; }
-      .navbar-nav > li.active > a { color: #fff !important; background: rgba(59,130,246,0.3) !important; border-radius: 8px; }
-      
-      .well { background: #fff; border: 1px solid #e2e8f0; border-radius: 14px; box-shadow: 0 2px 8px rgba(0,0,0,0.04); }
-      .btn-primary { background: #2563eb; border: none; border-radius: 10px; font-weight: 700; padding: 12px 28px; font-size: 1.05em; }
-      .btn-primary:hover { background: #1d4ed8; transform: translateY(-1px); }
-      .btn-success { background: #16a34a; border: none; border-radius: 10px; font-weight: 700; padding: 12px 28px; }
-      .btn-warning { background: #d97706; border: none; border-radius: 10px; font-weight: 700; padding: 12px 28px; color:#fff; }
-      
-      .form-group label { font-weight: 600; color: #334155; }
-      .form-control, .selectize-input { border-radius: 8px !important; border: 2px solid #e2e8f0 !important; }
-      .form-control:focus, .selectize-input.focus { border-color: #3b82f6 !important; box-shadow: 0 0 0 3px rgba(59,130,246,0.15) !important; }
-      
-      .section-title { font-size: 1.5em; font-weight: 700; color: #0f172a; margin-bottom: 20px; padding-bottom: 10px; border-bottom: 3px solid #3b82f6; }
-      
-      .api-key-box { background: #fffbeb; border: 2px solid #f59e0b; border-radius: 12px; padding: 16px; margin-bottom: 20px; }
-      
-      .loading-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(15,23,42,0.7); z-index: 9999; display: flex; align-items: center; justify-content: center; }
-      .loading-spinner { background: #fff; padding: 40px; border-radius: 16px; text-align: center; box-shadow: 0 20px 60px rgba(0,0,0,0.3); }
-      .spinner { width: 50px; height: 50px; border: 4px solid #e2e8f0; border-top-color: #3b82f6; border-radius: 50%; animation: spin 0.8s linear infinite; margin: 0 auto 16px; }
-      @keyframes spin { to { transform: rotate(360deg); } }
-      
-      .output-container { background: #fff; border-radius: 16px; padding: 10px; box-shadow: 0 4px 20px rgba(0,0,0,0.08); }
-      
-      .tab-content { padding-top: 20px; }
-      .footer { text-align: center; padding: 20px; color: #94a3b8; font-size: 0.9em; margin-top: 40px; }
-    '))
-  ),
-  
-  navbarPage(
-    title = "📐 Riyaziyyat Müəllim Agent",
-    id = "main_nav",
-    
-    # ── TAB 1: TEST TAPŞIRIQLARI ────────────────────
-    tabPanel("🎯 Test Tapşırıqları",
-      fluidRow(
-        column(12,
-          div(class = "api-key-box",
-            fluidRow(
-              column(8, passwordInput("api_key", "🔑 ANTHROPIC_API_KEY:", value = CLAUDE_API_KEY, width = "100%")),
-              column(4, tags$p(style="margin-top:25px; color:#92400e;", "API açarınızı console.anthropic.com saytından alın"))
-            )
-          )
-        )
-      ),
-      
-      fluidRow(
-        column(3, wellPanel(
-          h4("📚 Sinif və Mövzu", style="margin-top:0"),
-          selectInput("test_grade", "Sinif:", choices = as.character(1:11), selected = "6"),
-          uiOutput("test_standard_ui"),
-          uiOutput("test_topic_ui"),
-          hr(),
-          h4("⚙️ Parametrlər"),
-          numericInput("test_count", "Tapşırıq sayı:", value = 12, min = 5, max = 30),
-          checkboxGroupInput("test_bloom", "Bloom səviyyələri:",
-            choices = c("Xatırlama" = "Xatırlama", "Anlama" = "Anlama", "Tətbiqetmə" = "Tətbiqetmə",
-                        "Təhlil" = "Təhlil", "Qiymətləndirmə" = "Qiymətləndirmə", "Yaratma" = "Yaratma"),
-            selected = c("Xatırlama","Anlama","Tətbiqetmə","Təhlil","Qiymətləndirmə")
-          ),
-          sliderInput("test_dok", "DOK Səviyyəsi:", min = 1, max = 4, value = 3),
-          selectInput("test_diff", "Çətinlik:", choices = c("Asan-Orta" = "asan-orta", "Qarışıq (PISA)" = "qarisiq", "Orta-Çətin" = "orta-cetin")),
-          hr(),
-          actionButton("test_generate", "🤖 Test Yarat", class = "btn-primary btn-block", style = "font-size:1.1em; padding:14px;")
-        )),
-        
-        column(9,
-          div(class = "output-container", uiOutput("test_output"))
-        )
-      )
-    ),
-    
-    # ── TAB 2: DƏRS PLANI ───────────────────────────
-    tabPanel("📋 Dərs Planı",
-      fluidRow(
-        column(3, wellPanel(
-          h4("📚 Sinif və Mövzu", style="margin-top:0"),
-          selectInput("lesson_grade", "Sinif:", choices = as.character(1:11), selected = "6"),
-          uiOutput("lesson_standard_ui"),
-          uiOutput("lesson_topic_ui"),
-          hr(),
-          h4("⚙️ Parametrlər"),
-          numericInput("lesson_duration", "Müddət (dəqiqə):", value = 45, min = 30, max = 120, step = 15),
-          checkboxGroupInput("lesson_bloom", "Bloom:",
-            choices = c("Xatırlama","Anlama","Tətbiqetmə","Təhlil","Qiymətləndirmə","Yaratma"),
-            selected = c("Anlama","Tətbiqetmə","Təhlil")
-          ),
-          sliderInput("lesson_dok", "DOK:", min = 1, max = 4, value = 2),
-          hr(),
-          actionButton("lesson_generate", "🤖 Dərs Planı Yarat", class = "btn-success btn-block", style = "font-size:1.1em; padding:14px;")
-        )),
-        
-        column(9,
-          div(class = "output-container", uiOutput("lesson_output"))
-        )
-      )
-    ),
-    
-    # ── TAB 3: DƏRSLİK ──────────────────────────────
-    tabPanel("📖 Dərslik Məzmunu",
-      fluidRow(
-        column(3, wellPanel(
-          selectInput("book_grade", "Sinif:", choices = as.character(1:11), selected = "6"),
-          uiOutput("book_topic_ui"),
-          actionButton("book_search", "🔍 Axtar", class = "btn-warning btn-block")
-        )),
-        column(9,
-          div(class = "output-container", style = "padding:20px;", uiOutput("book_output"))
-        )
-      )
-    )
-  ),
-  
-  tags$div(class = "footer", "📐 ARTI 2026 — Qiymətləndirmə, Analiz və Monitorinq │ Tariyel Talibov │ Riyaziyyat Müəllim Agent v2.0")
+# ====================================================================
+ui <- dashboardPage(skin="blue",
+  dashboardHeader(title=span(icon("graduation-cap")," Muellim Agent v3"),titleWidth=300),
+  dashboardSidebar(width=280,sidebarMenu(id="tabs",
+    menuItem("Ana Sehife",tabName="home",icon=icon("home")),
+    menuItem("Ders Planlari",icon=icon("book"),menuSubItem("Yeni Plan",tabName="lesson_new"),menuSubItem("Planlarim",tabName="lesson_list")),
+    menuItem("Qiymetlendirme",icon=icon("clipboard-check"),menuSubItem("Test Yarat",tabName="test_create"),menuSubItem("CAT Test",tabName="cat_test"),menuSubItem("Netice Analizi",tabName="analysis")),
+    menuItem("Shagird Analizi",icon=icon("users"),menuSubItem("Profiller",tabName="student_profiles"),menuSubItem("Risk Qruplari",tabName="risk_groups"),menuSubItem("Inklyuziv",tabName="inclusive")),
+    menuItem("Senedler",tabName="documents",icon=icon("file-alt")),
+    menuItem("Kommunikasiya",tabName="communication",icon=icon("comments")),
+    menuItem("Standartlar",tabName="standards",icon=icon("list-check")),
+    menuItem("Statistika",tabName="statistics",icon=icon("chart-bar")),
+    hr(),div(p(style="padding:10px;color:#b8c7ce;font-size:11px;","ARTI 2026 (c) Tariyel Talibov"))
+  )),
+  dashboardBody(tags$head(tags$style(HTML("
+    .content-wrapper{background:#f4f6f9}.box{border-top:3px solid #3c8dbc}
+    .skin-blue .main-header .navbar{background:#003366}.skin-blue .main-header .logo{background:#002244}
+    .btn-generate{font-size:1.1em!important;padding:12px 24px!important;font-weight:700!important}
+    .ai-loading{text-align:center;padding:50px}
+    .ai-loading .spinner{width:50px;height:50px;border:4px solid #e2e8f0;border-top-color:#3b82f6;border-radius:50%;animation:spin .8s linear infinite;margin:0 auto 16px}
+    @keyframes spin{to{transform:rotate(360deg)}}
+    .selectize-dropdown{max-height:400px!important}.selectize-dropdown-content{max-height:380px!important}
+    .timer-display{font-size:1.3em;color:#3b82f6;font-weight:700;padding:10px;text-align:center}
+  "))),
+  tabItems(
+    tabItem(tabName="home",
+      fluidRow(infoBox("Ders Planlari",textOutput("plan_count"),icon=icon("book"),color="blue",width=3),
+        infoBox("Testler",textOutput("test_count"),icon=icon("clipboard"),color="green",width=3),
+        infoBox("Shagirdler",textOutput("student_count"),icon=icon("users"),color="yellow",width=3),
+        infoBox("Risk",textOutput("alert_count"),icon=icon("exclamation-triangle"),color="red",width=3)),
+      fluidRow(box(title="Sinif Performansi",width=6,solidHeader=TRUE,status="info",plotlyOutput("class_perf",height="300px")),
+        box(title="Seviyye Paylamasi",width=6,solidHeader=TRUE,plotlyOutput("level_dist",height="300px")))),
+    # --- LESSON ---
+    tabItem(tabName="lesson_new",fluidRow(box(title="AI ile Ders Plani",width=12,solidHeader=TRUE,status="primary",
+      fluidRow(column(2,selectInput("lp_grade","Sinif:",choices=as.character(1:11),selected="6")),
+        column(5,uiOutput("lp_standard_ui")),column(3,uiOutput("lp_topic_ui")),
+        column(2,numericInput("lp_duration","Muddet:",value=45))),
+      fluidRow(column(3,checkboxGroupInput("lp_bloom","Bloom:",choices=c("Xatirlama","Anlama","Tetbiqetme","Tehlil","Qiymetlendirme","Yaratma"),selected=c("Anlama","Tetbiqetme","Tehlil"))),
+        column(2,sliderInput("lp_dok","DOK:",min=1,max=4,value=2)),
+        column(3,checkboxInput("lp_inclusive","Inklyuziv",FALSE)),
+        column(2,actionButton("lp_generate","AI ile Yarat",class="btn-primary btn-lg btn-generate",style="margin-top:25px;")),
+        column(2,uiOutput("lp_timer_ui"))),
+      hr(),uiOutput("lp_result")))),
+    # --- TEST ---
+    tabItem(tabName="test_create",fluidRow(box(title="AI Test Generatoru",width=12,solidHeader=TRUE,status="success",
+      fluidRow(column(2,selectInput("tc_grade","Sinif:",choices=as.character(1:11),selected="6")),
+        column(5,uiOutput("tc_standard_ui")),column(3,uiOutput("tc_topic_ui")),
+        column(2,numericInput("tc_count","Say:",value=12,min=5,max=30))),
+      fluidRow(column(3,checkboxGroupInput("tc_bloom","Bloom:",choices=c("Xatirlama","Anlama","Tetbiqetme","Tehlil","Qiymetlendirme","Yaratma"),
+        selected=c("Xatirlama","Anlama","Tetbiqetme","Tehlil","Qiymetlendirme"))),
+        column(2,sliderInput("tc_dok","DOK:",min=1,max=4,value=3)),
+        column(3,sliderInput("tc_diff","Cetinlik:",min=0.1,max=1.0,value=c(0.3,0.8),step=0.1)),
+        column(2,actionButton("tc_generate","Test Yarat",class="btn-success btn-lg btn-generate",style="margin-top:25px;")),
+        column(2,uiOutput("tc_timer_ui"))),
+      hr(),uiOutput("tc_result")))),
+    # --- OTHER TABS (minimal) ---
+    tabItem(tabName="analysis",fluidRow(box(title="Psixometrik Analiz",width=12,solidHeader=TRUE,status="warning",p("Analiz modulu hazirlanir...")))),
+    tabItem(tabName="student_profiles",fluidRow(box(title="Shagird Profilleri",width=12,solidHeader=TRUE,p("Profil modulu hazirlanir...")))),
+    tabItem(tabName="risk_groups",fluidRow(box(title="Risk Qruplari",width=12,solidHeader=TRUE,status="danger",p("Risk modulu hazirlanir...")))),
+    tabItem(tabName="standards",fluidRow(box(title="Standartlar",width=12,solidHeader=TRUE,
+      fluidRow(column(4,selectInput("st_grade2","Sinif:",choices=as.character(1:11),selected="6")),column(4,actionButton("st_load2","Yukle",class="btn-primary",style="margin-top:25px;"))),hr(),DTOutput("stds_table2")))),
+    tabItem(tabName="documents",fluidRow(box(title="Sened Generatoru",width=12,solidHeader=TRUE,p("Sened modulu hazirlanir...")))),
+    tabItem(tabName="communication",fluidRow(box(title="Kommunikasiya",width=12,solidHeader=TRUE,p("Mesaj modulu hazirlanir...")))),
+    tabItem(tabName="statistics",fluidRow(box(title="Mekteb Dashboard",width=12,solidHeader=TRUE,status="primary",
+      fluidRow(column(6,plotlyOutput("class_perf2",height="300px")),column(6,plotlyOutput("level_dist2",height="300px"))))))
+  ))
 )
 
-# ═══════════════════════════════════════════════════════════════
+# ====================================================================
 # SERVER
-# ═══════════════════════════════════════════════════════════════
-server <- function(input, output, session) {
+# ====================================================================
+server <- function(input,output,session){
+  output$lp_standard_ui <- renderUI(selectInput("lp_standard","Standart:",choices=get_standards_dropdown(input$lp_grade),width="100%"))
+  output$tc_standard_ui <- renderUI(selectInput("tc_standard","Standart:",choices=get_standards_dropdown(input$tc_grade),width="100%"))
+  output$lp_topic_ui <- renderUI(selectizeInput("lp_topic","Movzu:",choices=get_topics_for_grade(input$lp_grade),width="100%",options=list(placeholder="Movzu secin...",create=TRUE)))
+  output$tc_topic_ui <- renderUI(selectizeInput("tc_topic","Movzu:",choices=get_topics_for_grade(input$tc_grade),width="100%",options=list(placeholder="Movzu secin...",create=TRUE)))
 
-  # ── Reactive: standartlar ──
-  get_standards <- function(grade) {
-    STANDARDS[[as.character(grade)]] %||% list("Standart tapılmadı" = "—")
-  }
-  
-  # ── TEST: Standart seçimi ──
-  output$test_standard_ui <- renderUI({
-    stds <- get_standards(input$test_grade)
-    selectInput("test_standard", "Standart:", choices = names(stds))
-  })
-  
-  # ── TEST: Mövzu seçimi (dərslikdən) ──
-  output$test_topic_ui <- renderUI({
-    grade <- as.integer(input$test_grade)
-    topics <- get_topics_for_grade(grade)
-    selectizeInput("test_topic", "Dərslik mövzusu:", choices = topics,
-                   options = list(placeholder = "Mövzu seçin və ya yazın", create = TRUE))
-  })
-  
-  # ── LESSON: Standart ──
-  output$lesson_standard_ui <- renderUI({
-    stds <- get_standards(input$lesson_grade)
-    selectInput("lesson_standard", "Standart:", choices = names(stds))
-  })
-  
-  # ── LESSON: Mövzu ──
-  output$lesson_topic_ui <- renderUI({
-    grade <- as.integer(input$lesson_grade)
-    topics <- get_topics_for_grade(grade)
-    selectizeInput("lesson_topic", "Dərslik mövzusu:", choices = topics,
-                   options = list(placeholder = "Mövzu seçin və ya yazın", create = TRUE))
-  })
-  
-  # ── BOOK: Mövzu ──
-  output$book_topic_ui <- renderUI({
-    grade <- as.integer(input$book_grade)
-    topics <- get_topics_for_grade(grade)
-    selectizeInput("book_topic", "Mövzu:", choices = topics,
-                   options = list(placeholder = "Mövzu seçin", create = TRUE))
-  })
-  
-  # ══════════════════════════════════════════════════
-  # TEST GENERASİYASI
-  # ══════════════════════════════════════════════════
-  observeEvent(input$test_generate, {
-    req(input$test_grade, input$test_topic, input$test_standard)
-    
-    grade   <- as.integer(input$test_grade)
-    topic   <- input$test_topic
-    std_key <- input$test_standard
-    std_val <- get_standards(grade)[[std_key]] %||% std_key
-    count   <- input$test_count
-    blooms  <- input$test_bloom
-    dok     <- input$test_dok
-    diff    <- input$test_diff
-    api_key <- input$api_key
-    
-    # Dərslikdən kontekst
-    context <- build_context(grade, topic)
-    
-    # Prompt
-    prompt <- build_test_prompt(grade, topic, std_val, context, count, blooms, dok, diff)
-    
-    output$test_output <- renderUI({
-      tagList(
-        tags$div(class = "loading-spinner-inline", style = "text-align:center; padding:60px;",
-          tags$div(class = "spinner", style = "width:50px; height:50px; border:4px solid #e2e8f0; border-top-color:#3b82f6; border-radius:50%; animation:spin 0.8s linear infinite; margin: 0 auto 16px;"),
-          tags$p(style = "font-size:1.1em; color:#475569;", "🤖 AI test tapşırıqlarını yaradır..."),
-          tags$p(style = "color:#94a3b8;", sprintf("Sinif %d │ %s │ %d tapşırıq", grade, topic, count))
-        )
-      )
-    })
-    
-    # API çağırışı
-    result <- call_claude(prompt, api_key)
-    
-    if (result$success) {
-      html_content <- result$text
-      
-      output$test_output <- renderUI({
-        tagList(
-          HTML(HTML5_CSS),
-          tags$div(class = "ai-output", HTML(html_content)),
-          tags$div(class = "arti-footer",
-            sprintf("📐 ARTI 2026 │ Sinif %d │ %s │ %s │ %d tapşırıq", grade, topic, std_val, count)
-          )
-        )
-      })
+  # Reactive timer values
+  lp_start <- reactiveVal(NULL)
+  tc_start <- reactiveVal(NULL)
+
+  # === LESSON GENERATE ===
+  observeEvent(input$lp_generate,{
+    req(input$lp_grade,input$lp_topic,input$lp_standard)
+    gr<-as.integer(input$lp_grade);tp<-input$lp_topic;st<-input$lp_standard;dur<-input$lp_duration;bl<-input$lp_bloom;dk<-input$lp_dok
+    lp_start(proc.time()["elapsed"])
+    output$lp_timer_ui <- renderUI(tags$div(class="timer-display","⏳ Yaradilir..."))
+    output$lp_result <- renderUI(tags$div(class="ai-loading",tags$div(class="spinner"),
+      tags$p(style="font-size:1.2em;","AI ders plani yaradir..."),
+      tags$p(style="color:#94a3b8;",sprintf("Sinif %d | %s | %d deq",gr,tp,dur))))
+    ctx<-build_context(gr,tp); pr<-build_lesson_prompt(gr,tp,st,ctx,dur,bl,dk); res<-call_claude(pr)
+    if(res$success){
+      saved <- save_result(res$text, DERS_DIR, gr, tp, "ders_plani")
+      stats_html <- make_stats_bar(res$time_sec, res$input_tokens, res$output_tokens, saved$html, saved$docx%||%"")
+      output$lp_timer_ui <- renderUI(tags$div(style="font-size:1.1em;color:#10b981;font-weight:700;padding:10px;",
+        sprintf("✅ %.1f san | %s token", res$time_sec, formatC(res$input_tokens+res$output_tokens,format="d",big.mark=","))))
+      output$lp_result <- renderUI(tagList(HTML(HTML5_CSS),tags$div(class="ai-output",HTML(res$text)),HTML(stats_html),
+        tags$div(class="arti-footer",sprintf("ARTI 2026 | Sinif %d | %s | %d deq",gr,tp,dur))))
     } else {
-      output$test_output <- renderUI({
-        tags$div(style = "padding:40px; text-align:center;",
-          tags$h3("❌ Xəta", style = "color:#dc2626;"),
-          tags$p(result$error),
-          tags$p(style = "color:#6b7280;", "API açarını yoxlayın. console.anthropic.com → API Keys")
-        )
-      })
+      output$lp_timer_ui <- renderUI(tags$div(style="color:#dc2626;font-weight:700;padding:10px;",sprintf("❌ %.1f san",res$time_sec)))
+      output$lp_result <- renderUI(tags$div(style="padding:30px;color:#dc2626;",tags$h3("Xeta"),tags$p(res$error)))
     }
   })
-  
-  # ══════════════════════════════════════════════════
-  # DƏRS PLANI GENERASİYASI
-  # ══════════════════════════════════════════════════
-  observeEvent(input$lesson_generate, {
-    req(input$lesson_grade, input$lesson_topic, input$lesson_standard)
-    
-    grade    <- as.integer(input$lesson_grade)
-    topic    <- input$lesson_topic
-    std_key  <- input$lesson_standard
-    std_val  <- get_standards(grade)[[std_key]] %||% std_key
-    duration <- input$lesson_duration
-    blooms   <- input$lesson_bloom
-    dok      <- input$lesson_dok
-    api_key  <- input$api_key
-    
-    context <- build_context(grade, topic)
-    prompt  <- build_lesson_prompt(grade, topic, std_val, context, duration, blooms, dok)
-    
-    output$lesson_output <- renderUI({
-      tagList(
-        tags$div(style = "text-align:center; padding:60px;",
-          tags$div(class = "spinner", style = "width:50px; height:50px; border:4px solid #e2e8f0; border-top-color:#16a34a; border-radius:50%; animation:spin 0.8s linear infinite; margin: 0 auto 16px;"),
-          tags$p(style = "font-size:1.1em; color:#475569;", "🤖 AI dərs planı yaradır..."),
-          tags$p(style = "color:#94a3b8;", sprintf("Sinif %d │ %s │ %d dəqiqə", grade, topic, duration))
-        )
-      )
-    })
-    
-    result <- call_claude(prompt, api_key)
-    
-    if (result$success) {
-      output$lesson_output <- renderUI({
-        tagList(
-          HTML(HTML5_CSS),
-          tags$div(class = "ai-output", HTML(result$text)),
-          tags$div(class = "arti-footer",
-            sprintf("📐 ARTI 2026 │ Sinif %d │ %s │ %d dəqiqə │ %s", grade, topic, duration, std_val)
-          )
-        )
-      })
+
+  # === TEST GENERATE ===
+  observeEvent(input$tc_generate,{
+    req(input$tc_grade,input$tc_topic,input$tc_standard)
+    gr<-as.integer(input$tc_grade);tp<-input$tc_topic;st<-input$tc_standard;cnt<-input$tc_count;bl<-input$tc_bloom;dk<-input$tc_dok
+    tc_start(proc.time()["elapsed"])
+    output$tc_timer_ui <- renderUI(tags$div(class="timer-display","⏳ Yaradilir..."))
+    output$tc_result <- renderUI(tags$div(class="ai-loading",tags$div(class="spinner"),
+      tags$p(style="font-size:1.2em;","AI test yaradir..."),
+      tags$p(style="color:#94a3b8;",sprintf("Sinif %d | %s | %d tapshiriq",gr,tp,cnt))))
+    ctx<-build_context(gr,tp); pr<-build_test_prompt(gr,tp,st,ctx,cnt,bl,dk); res<-call_claude(pr)
+    if(res$success){
+      saved <- save_result(res$text, TEST_DIR, gr, tp, "test")
+      stats_html <- make_stats_bar(res$time_sec, res$input_tokens, res$output_tokens, saved$html, saved$docx%||%"")
+      output$tc_timer_ui <- renderUI(tags$div(style="font-size:1.1em;color:#10b981;font-weight:700;padding:10px;",
+        sprintf("✅ %.1f san | %s token", res$time_sec, formatC(res$input_tokens+res$output_tokens,format="d",big.mark=","))))
+      output$tc_result <- renderUI(tagList(HTML(HTML5_CSS),tags$div(class="ai-output",HTML(res$text)),HTML(stats_html),
+        tags$div(class="arti-footer",sprintf("ARTI 2026 | Sinif %d | %s | %d tapshiriq",gr,tp,cnt))))
     } else {
-      output$lesson_output <- renderUI({
-        tags$div(style = "padding:40px; text-align:center;",
-          tags$h3("❌ Xəta", style = "color:#dc2626;"),
-          tags$p(result$error)
-        )
-      })
+      output$tc_timer_ui <- renderUI(tags$div(style="color:#dc2626;font-weight:700;padding:10px;",sprintf("❌ %.1f san",res$time_sec)))
+      output$tc_result <- renderUI(tags$div(style="padding:30px;color:#dc2626;",tags$h3("Xeta"),tags$p(res$error)))
     }
   })
-  
-  # ══════════════════════════════════════════════════
-  # DƏRSLİK AXTARIŞI
-  # ══════════════════════════════════════════════════
-  observeEvent(input$book_search, {
-    req(input$book_grade, input$book_topic)
-    
-    grade <- as.integer(input$book_grade)
-    topic <- input$book_topic
-    results <- search_chunks(grade, topic, max_results = 5)
-    
-    if (length(results) == 0) {
-      output$book_output <- renderUI({
-        tags$div(style = "text-align:center; padding:40px;",
-          tags$h3("🔍 Nəticə tapılmadı"),
-          tags$p(sprintf("Sinif %d, mövzu: '%s'", grade, topic))
-        )
-      })
-      return()
+
+  # === STANDARDS TABLE ===
+  observeEvent(input$st_load2,{
+    stds <- ALL_STANDARDS[[as.character(input$st_grade2)]]
+    if(!is.null(stds)&&length(stds)>0){
+      df <- do.call(rbind, lapply(stds, function(s) data.frame(Kod=s$kod,Sahe=s$sahe,Standart=s$metn,Bloom=s$bloom,DOK=s$dok,stringsAsFactors=FALSE)))
+      output$stds_table2 <- renderDT(datatable(df,options=list(pageLength=20),colnames=c("Kod","Sahe","Standart","Bloom","DOK")))
     }
-    
-    output$book_output <- renderUI({
-      chunk_divs <- lapply(results, function(ch) {
-        text_preview <- substr(ch$text %||% "", 1, 2000)
-        keywords <- paste(head(ch$keywords %||% character(0), 10), collapse = ", ")
-        
-        tags$div(style = "background:#fff; border-radius:12px; padding:20px; margin-bottom:16px; border-left:4px solid #2563eb; box-shadow: 0 2px 8px rgba(0,0,0,0.05);",
-          tags$div(style = "display:flex; gap:12px; margin-bottom:12px; flex-wrap:wrap;",
-            tags$span(style = "background:#eff6ff; color:#1d4ed8; padding:4px 12px; border-radius:16px; font-weight:700; font-size:0.85em;",
-              sprintf("📄 səh. %d-%d", ch$page_start, ch$page_end)),
-            tags$span(style = "background:#fef3c7; color:#92400e; padding:4px 12px; border-radius:16px; font-size:0.85em;",
-              ch$source_file %||% "?")
-          ),
-          if (!is.null(ch$chapter) && nchar(ch$chapter) > 0) tags$h4(style = "margin:0 0 8px; color:#0f172a;", ch$chapter),
-          if (nchar(keywords) > 0) tags$p(style = "color:#6b7280; font-size:0.9em;", paste("🔑", keywords)),
-          tags$pre(style = "background:#f8fafc; padding:16px; border-radius:8px; white-space:pre-wrap; font-size:0.9em; max-height:400px; overflow-y:auto; font-family:'Noto Sans',sans-serif; line-height:1.6;",
-            text_preview
-          )
-        )
-      })
-      
-      tagList(
-        tags$h3(style = "color:#0f172a; margin-bottom:16px;",
-          sprintf("📚 Sinif %d — '%s' — %d nəticə", grade, topic, length(results))),
-        chunk_divs
-      )
-    })
   })
+
+  # === HOME ===
+  output$plan_count <- renderText(length(list.files(DERS_DIR,pattern="\\.html$")))
+  output$test_count <- renderText(length(list.files(TEST_DIR,pattern="\\.html$")))
+  output$student_count <- renderText("--")
+  output$alert_count <- renderText("0")
+  output$class_perf <- renderPlotly(plot_ly(x=c("5A","5B","6A","6B","7A"),y=c(72,68,75,80,65),type="bar",marker=list(color=c("#3c8dbc","#00a65a","#f39c12","#dd4b39","#605ca8")))%>%layout(xaxis=list(title="Sinif"),yaxis=list(title="Bal")))
+  output$level_dist <- renderPlotly(plot_ly(x=c("Zeif","Orta","Yuksek","Ela"),y=c(15,45,30,10),type="bar",marker=list(color=c("#dd4b39","#f39c12","#00a65a","#3c8dbc")))%>%layout(xaxis=list(title="Seviyye"),yaxis=list(title="Say")))
+  output$class_perf2 <- renderPlotly(plot_ly(x=c("5A","5B","6A","6B","7A"),y=c(72,68,75,80,65),type="bar")%>%layout(title="Sinif Performansi"))
+  output$level_dist2 <- renderPlotly(plot_ly(x=c("Zeif","Orta","Yuksek","Ela"),y=c(15,45,30,10),type="bar")%>%layout(title="Seviyye"))
 }
 
-# ─── RUN ──────────────────────────────────────────────────────
-shinyApp(ui = ui, server = server, options = list(
-  host = "127.0.0.1",
-  port = as.integer(Sys.getenv("SHINY_PORT", "4040")),
-  launch.browser = TRUE
-))
+shinyApp(ui=ui,server=server,options=list(host="127.0.0.1",port=as.integer(Sys.getenv("SHINY_PORT","4040")),launch.browser=TRUE))
