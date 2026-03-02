@@ -1,107 +1,102 @@
-<p align="center">
-  <img src="https://img.shields.io/badge/ARTI-2026-003366?style=for-the-badge&labelColor=002244" alt="ARTI 2026"/>
-  <img src="https://img.shields.io/badge/Riyaziyyat-1--11_sinif-blue?style=for-the-badge" alt="Riyaziyyat"/>
-</p>
+# 📐 Riy_Muellim_Agent v3.1
 
-<h1 align="center">📐 Riy_Muellim_Agent</h1>
+**AI ilə Riyaziyyat Müəllim İdarə Paneli**
 
-<p align="center">
-  <strong>Riyaziyyat Müəllimləri üçün AI Agent Sistemi — 1-11-ci siniflər</strong>
-</p>
+ARTI 2026 © Tariyel Talibov (ARTI — Azərbaycan Respublikası Təhsil İnstitutu)
 
-<p align="center">
-  <img src="https://img.shields.io/badge/Node.js-20+-339933?logo=nodedotjs&logoColor=white" alt="Node.js"/>
-  <img src="https://img.shields.io/badge/PostgreSQL-16-336791?logo=postgresql&logoColor=white" alt="PostgreSQL"/>
-  <img src="https://img.shields.io/badge/Claude-Sonnet_4.5-CC785C?logo=anthropic&logoColor=white" alt="Claude"/>
-  <img src="https://img.shields.io/badge/R_Shiny-Dashboard-276DC3?logo=r&logoColor=white" alt="R Shiny"/>
-</p>
+## 🎯 Haqqında
 
----
+Azərbaycan riyaziyyat müəllimləri üçün süni intellekt əsaslı dərs planı və test generasiya sistemi.
 
-## 📂 Struktur
+- **254 dərslik mövzusu** (sinif 1-11, səhifə istinadları ilə)
+- **178 kurikulum standartı** (Bloom taksonomiyası + DOK səviyyələri)
+- **Claude AI** ilə dərs planı və test tapşırıqları generasiyası
+- **Sinqapur CPA** + **Finlandiya** + **PISA/TIMSS** standartları
+- **30% böyüdülmüş** nəfis HTML5 çıxış
+- Token/vaxt izləmə + avtomatik HTML/DOCX saxlama
+
+## 📁 Struktur
 
 ```
 Riy_Muellim_Agent/
-├── database/
-│   ├── migrations/001_schema.sql     ← 25+ cədvəl
-│   ├── seeds/
-│   │   ├── 001_base_seed.sql         ← Standartlar (1-11 sinif)
-│   │   └── 002_lesson_plans_tasks.sql← Dərs planları + 36 tapşırıq
-│   └── queries/
-│       └── Riy_SQL.sql               ← 18 gözəl sorğu
-├── derslikler/                        ← 🆕 Dərslik RAG sistemi
-│   ├── pdf/                           ← PDF dərslikləri bura qoyun
-│   ├── chunks/                        ← AI parçalama
-│   └── embeddings/                    ← pgvector
-├── src/                               ← 6 AI Agent + API
-├── r_shiny/                           ← Dashboard
-├── output/
-│   ├── ders_planlari/                 ← Yaradılmış dərs planları
-│   ├── tapshiriqlar/                  ← Tapşırıq bankası
-│   ├── resurslar/                     ← PPTX, DOCX, XLSX
-│   └── imtahanlar/                    ← İmtahan materialları
-└── docs/
+├── r_shiny/app/
+│   └── app.R                 # Əsas Shiny dashboard
+├── derslikler/
+│   ├── topics.json           # 254 mövzu (sinif 1-11)
+│   ├── standards.json        # 178 standart
+│   ├── chunks/               # Dərslik PDF chunk-ları
+│   └── *.pdf                 # Dərslik PDF-ləri
+├── scripts/
+│   ├── pdf_pipeline.py       # PDF → JSON chunk pipeline
+│   ├── search_chunks.py      # Chunk axtarış aləti
+│   └── generate.py           # CLI generator wrapper
+├── database/seeds/
+│   └── 001_base_seed.sql     # PostgreSQL seed data
+├── Ders_planlari/            # Yaradılmış dərs planları (HTML+DOCX)
+├── Testler/                  # Yaradılmış testlər (HTML+DOCX)
+├── CLAUDE.md                 # Claude Code təlimatları
+├── .env.example              # Konfiqurasiya nümunəsi
+└── README.md
 ```
-
-## 📐 Məzmun Sahələri
-
-| Sahə | Siniflər | Nümunə mövzular |
-|:-----|:---------|:----------------|
-| 🔢 Ədədlər və əməllər | 1-8 | Natural ədədlər, kəsrlər, faizlər, rasional ədədlər |
-| 🔤 Cəbr və funksiyalar | 1-11 | Tənliklər, funksiyalar, törəmə, inteqral |
-| 📏 Həndəsə | 1-11 | Fiqurlar, Pifaqor, vektorlar, fəza həndəsəsi |
-| 📊 Statistika və ehtimal | 1-11 | Diaqramlar, orta, median, ehtimal, kombinatorika |
-| 📐 Ölçmə | 1-4 | Uzunluq, kütlə, tutum, zaman, pul |
 
 ## 🚀 Quraşdırma
 
+### Tələblər
+- R (≥ 4.3) + RStudio
+- R paketləri: `shiny`, `shinydashboard`, `DT`, `plotly`, `httr`, `jsonlite`
+- Anthropic API açarı
+
+### Addımlar
+
 ```bash
-# 1. Bazanı yaradın
-createdb riy_muellim_agent
+# 1. Klonlayın
+git clone https://github.com/Ttariyel-1954/Riy_Muellim_Agent.git
+cd Riy_Muellim_Agent
 
-# 2. Cədvəlləri yaradın
-psql -d riy_muellim_agent -f database/migrations/001_schema.sql
+# 2. .env faylı yaradın
+cp .env.example .env
+# .env faylında ANTHROPIC_API_KEY-i daxil edin
 
-# 3. Standartları yükləyin
-psql -d riy_muellim_agent -f database/seeds/001_base_seed.sql
+# 3. R paketlərini quraşdırın
+Rscript -e 'install.packages(c("shiny","shinydashboard","DT","plotly","httr","jsonlite"))'
 
-# 4. Dərs planları + tapşırıqları yükləyin
-psql -d riy_muellim_agent -f database/seeds/002_lesson_plans_tasks.sql
-
-# 5. Sorğulara baxın
-psql -d riy_muellim_agent
-\pset border 2
-\pset linestyle unicode
-\i database/queries/Riy_SQL.sql
+# 4. İşə salın
+Rscript -e 'shiny::runApp("r_shiny/app", port=4040, launch.browser=TRUE)'
 ```
 
-## 📚 Dərslik İnteqrasiyası (RAG)
+Brauzer avtomatik açılacaq: http://127.0.0.1:4040
 
-Dərslik PDF-lərini `derslikler/pdf/` papkasına qoyduqda:
+## 📋 İmkanlar
 
-```
-Müəllim: "6-cı sinif, Faizlər, 15 tapşırıq yaz"
-    │
-    ▼
-┌─────────────────┐
-│ PostgreSQL:     │ → R6.3.1 standartı tapılır
-│ Standart seçimi │
-└────────┬────────┘
-         │
-┌────────▼────────┐
-│ pgvector:       │ → Dərslikdən "Faizlər" hissəsi
-│ Dərslik axtarış│   (səh. 84-92) qaytarılır
-└────────┬────────┘
-         │
-┌────────▼────────┐
-│ Claude AI:      │ → Standart + Dərslik + Bloom/DOK
-│ Generasiya      │   əsasında keyfiyyətli nəticə
-└─────────────────┘
-```
+### Dərs Planı Yaratma
+- Sinif, mövzu, standart seçin → AI 5 mərhələli dərs planı yaradır
+- Sinqapur CPA: Konkret → Təsviri → Mücərrəd
+- Diferensiasiya: 🟢 Baza / 🟡 Orta / 🔴 Yüksək
+- Dərslik səhifə istinadları
 
----
+### Test Generasiyası
+- Bloom taksonomiyası (6 səviyyə) + DOK (4 səviyyə)
+- Çoxseçimli + açıq cavablı tapşırıqlar
+- Cavab açarı + addım-addım həll
+- Distraktor analizi + rubrikalar
+- PISA/TIMSS/Sinqapur standartlarına uyğun
 
-<p align="center">
-  <strong>ARTI 2026</strong> — Tariyel Talibov<br/>
-  <em>Qiymətləndirmə, Analiz və Monitorinq Departamenti</em>
-</p>
+### Token İzləmə
+- Real vaxt göstəricisi (vaxt + token sayı)
+- Giriş/çıxış token ayrıca
+- Təxmini qiymət (USD)
+- Avtomatik HTML + DOCX saxlama
+
+## 📊 Texnologiyalar
+
+| Komponent | Texnologiya |
+|-----------|-------------|
+| Frontend | R Shiny + shinydashboard |
+| AI | Claude API (Anthropic) |
+| Məlumat | JSON + PostgreSQL |
+| Çıxış | HTML5 + DOCX (pandoc) |
+| Pipeline | Python (PDF → chunks) |
+
+## 📝 Lisenziya
+
+© 2026 Tariyel Talibov, ARTI (Azərbaycan Respublikası Təhsil İnstitutu)

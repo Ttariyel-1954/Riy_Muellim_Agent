@@ -1,11 +1,53 @@
-node_modules/
-.env
-uploads/
-logs/
-*.log
+# === OS ===
 .DS_Store
-dist/
-coverage/
-*.zip
+Thumbs.db
+*~
+
+# === R ===
+.Rhistory
+.RData
+.Rproj.user/
+*.Rproj
+
+# === Python ===
+__pycache__/
+*.pyc
+*.pyo
+.venv/
+venv/
+
+# === Secrets ===
+.env
+*.key
+*.pem
+
+# === Backups ===
+*.bak
+*.bak_*
+*.backup_*
+*.old
+
+# === Temp ===
+tmp/
+temp/
+*.log
+nohup.out
+
+# === Node ===
+node_modules/
+package-lock.json
+
+# === Large binaries ===
 derslikler/pdf/
 derslikler/embeddings/
+*.zip
+
+# === Office temp ===
+~$*
+
+# === Generated outputs (local only) ===
+Ders_planlari/*.html
+Ders_planlari/*.docx
+Testler/*.html
+Testler/*.docx
+Mesajlar/
