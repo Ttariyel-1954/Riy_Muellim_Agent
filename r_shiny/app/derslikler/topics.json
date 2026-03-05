@@ -1,0 +1,493 @@
+{
+  "1": {
+    "bolmeler": [
+      {
+        "bolme": "Ədədlər (1-20)",
+        "movzular": [
+          {"ad": "1-dən 10-a qədər ədədlər", "sehife": "8-16"},
+          {"ad": "Ədədin yazılışı və oxunuşu", "sehife": "17-22"},
+          {"ad": "Toplama əməli (10 daxilində)", "sehife": "23-30"},
+          {"ad": "Çıxma əməli (10 daxilində)", "sehife": "31-38"},
+          {"ad": "10-dan 20-yə qədər ədədlər", "sehife": "39-46"},
+          {"ad": "Toplama və çıxma (20 daxilində)", "sehife": "47-56"}
+        ]
+      },
+      {
+        "bolme": "Həndəsə",
+        "movzular": [
+          {"ad": "Həndəsi fiqurlar (dairə, üçbucaq, düzbucaqlı, kvadrat)", "sehife": "57-64"},
+          {"ad": "Nöqtə, düz xətt, əyri xətt, parça", "sehife": "65-72"}
+        ]
+      },
+      {
+        "bolme": "Ölçmə",
+        "movzular": [
+          {"ad": "Uzunluğun ölçülməsi (sm)", "sehife": "73-80"},
+          {"ad": "Zamanın ölçülməsi (saat)", "sehife": "81-86"},
+          {"ad": "Pul (manat, qəpik)", "sehife": "87-92"}
+        ]
+      }
+    ]
+  },
+  "2": {
+    "bolmeler": [
+      {
+        "bolme": "Ədədlər (1-100)",
+        "movzular": [
+          {"ad": "İkirəqəmli ədədlər (10-99)", "sehife": "8-14"},
+          {"ad": "Toplama (100 daxilində, keçidli)", "sehife": "15-24"},
+          {"ad": "Çıxma (100 daxilində, keçidli)", "sehife": "25-34"},
+          {"ad": "Vurma anlayışı (vurma cədvəli 2, 3, 4, 5)", "sehife": "35-48"},
+          {"ad": "Bölmə anlayışı", "sehife": "49-56"},
+          {"ad": "Üçrəqəmli ədədlər (100-999)", "sehife": "57-66"}
+        ]
+      },
+      {
+        "bolme": "Həndəsə",
+        "movzular": [
+          {"ad": "Çoxbucaqlılar", "sehife": "67-72"},
+          {"ad": "Simmetriya", "sehife": "73-78"},
+          {"ad": "Perimetr anlayışı", "sehife": "79-84"}
+        ]
+      },
+      {
+        "bolme": "Ölçmə",
+        "movzular": [
+          {"ad": "Uzunluq vahidləri (sm, m, km)", "sehife": "85-90"},
+          {"ad": "Kütlə vahidləri (q, kq)", "sehife": "91-96"},
+          {"ad": "Zaman vahidləri (saat, dəqiqə)", "sehife": "97-102"}
+        ]
+      }
+    ]
+  },
+  "3": {
+    "bolmeler": [
+      {
+        "bolme": "Ədədlər və əməllər",
+        "movzular": [
+          {"ad": "Dördrəqəmli ədədlər (1000-9999)", "sehife": "8-16"},
+          {"ad": "Toplama və çıxma (çoxrəqəmli)", "sehife": "17-28"},
+          {"ad": "Vurma cədvəli (6, 7, 8, 9)", "sehife": "29-40"},
+          {"ad": "İkirəqəmli ədədə vurma", "sehife": "41-48"},
+          {"ad": "Birrəqəmli ədədə bölmə", "sehife": "49-58"},
+          {"ad": "Qalıqlı bölmə", "sehife": "59-64"}
+        ]
+      },
+      {
+        "bolme": "Kəsrlər (giriş)",
+        "movzular": [
+          {"ad": "Kəsr anlayışı (1/2, 1/3, 1/4)", "sehife": "65-72"},
+          {"ad": "Eyni məxrəcli kəsrlərin müqayisəsi", "sehife": "73-78"}
+        ]
+      },
+      {
+        "bolme": "Həndəsə",
+        "movzular": [
+          {"ad": "Bucaq növləri (düz, iti, küt)", "sehife": "79-86"},
+          {"ad": "Perimetr hesablanması", "sehife": "87-94"},
+          {"ad": "Simmetriya oxu", "sehife": "95-100"}
+        ]
+      },
+      {
+        "bolme": "Ölçmə",
+        "movzular": [
+          {"ad": "Zaman (saat, dəqiqə, saniyə)", "sehife": "101-108"},
+          {"ad": "Pul (manat, qəpik) ilə hesablamalar", "sehife": "109-114"},
+          {"ad": "Kütlə (q, kq, ton)", "sehife": "115-120"}
+        ]
+      }
+    ]
+  },
+  "4": {
+    "bolmeler": [
+      {
+        "bolme": "Ədədlər və əməllər",
+        "movzular": [
+          {"ad": "Çoxrəqəmli ədədlər (milyon dairəsinə qədər)", "sehife": "8-16"},
+          {"ad": "Çoxrəqəmli ədədlərin toplanması və çıxılması", "sehife": "17-26"},
+          {"ad": "İki-üçrəqəmli ədədlərə vurma", "sehife": "27-36"},
+          {"ad": "İkirəqəmli ədədə bölmə", "sehife": "37-46"},
+          {"ad": "Bölünmə əlamətləri (2, 3, 5, 9, 10)", "sehife": "47-54"}
+        ]
+      },
+      {
+        "bolme": "Kəsrlər",
+        "movzular": [
+          {"ad": "Adi kəsrlər və növləri (düzgün, düzgün olmayan)", "sehife": "55-62"},
+          {"ad": "Qarışıq ədədlər", "sehife": "63-68"},
+          {"ad": "Eyni məxrəcli kəsrlərin toplanması və çıxılması", "sehife": "69-76"},
+          {"ad": "Onluq kəsrlərə giriş", "sehife": "77-84"}
+        ]
+      },
+      {
+        "bolme": "Həndəsə",
+        "movzular": [
+          {"ad": "Bucağın ölçülməsi (dərəcə ilə)", "sehife": "85-92"},
+          {"ad": "Düzbucaqlı və kvadratın sahəsi", "sehife": "93-102"},
+          {"ad": "Mürəkkəb fiqurların sahəsi", "sehife": "103-108"}
+        ]
+      },
+      {
+        "bolme": "Ölçmə",
+        "movzular": [
+          {"ad": "Həcm və tutum (litr, ml, sm³)", "sehife": "109-116"},
+          {"ad": "Uzunluq, sahə vahidlərinin çevrilməsi", "sehife": "117-124"}
+        ]
+      }
+    ]
+  },
+  "5": {
+    "bolmeler": [
+      {
+        "bolme": "Natural ədədlər və əməllər",
+        "movzular": [
+          {"ad": "Trilyon dairəsində natural ədədlər", "sehife": "8-13"},
+          {"ad": "Natural ədədlərin müqayisəsi və sıralanması", "sehife": "14-17"},
+          {"ad": "Natural ədədlərin yuvarlaqlaşdırılması", "sehife": "18-21"},
+          {"ad": "Natural ədədlərin toplanması və çıxılması", "sehife": "22-25"},
+          {"ad": "Natural ədədin kvadratı və kubu", "sehife": "26-27"},
+          {"ad": "Natural ədədlərin vurulması və bölünməsi", "sehife": "28-29"},
+          {"ad": "ƏBO və ƏKO", "sehife": "30-36"}
+        ]
+      },
+      {
+        "bolme": "Adi kəsrlər",
+        "movzular": [
+          {"ad": "Düzgün və düzgün olmayan kəsrlər", "sehife": "38-41"},
+          {"ad": "Kəsrlərin müqayisəsi və sıralanması", "sehife": "42-45"},
+          {"ad": "Məxrəcləri müxtəlif olan kəsrlərin toplanması/çıxılması", "sehife": "46-57"},
+          {"ad": "Qarışıq ədədlərin toplanması və çıxılması", "sehife": "50-57"},
+          {"ad": "Adi kəsrlərin vurulması", "sehife": "62-65"},
+          {"ad": "Qarışıq ədədlərin vurulması", "sehife": "66-69"},
+          {"ad": "Adi kəsrlərin bölünməsi", "sehife": "70-73"},
+          {"ad": "Qarışıq ədədlərin bölünməsi", "sehife": "74-80"}
+        ]
+      },
+      {
+        "bolme": "Onluq kəsrlər",
+        "movzular": [
+          {"ad": "Onluq kəsrlər", "sehife": "84-87"},
+          {"ad": "Onluq kəsrlərin müqayisəsi və yuvarlaqlaşdırılması", "sehife": "88-91"},
+          {"ad": "Adi kəsr ↔ onluq kəsr çevrilməsi", "sehife": "92-95"},
+          {"ad": "Onluq kəsrlərin toplanması və çıxılması", "sehife": "96-101"},
+          {"ad": "Onluq kəsrlərin vurulması", "sehife": "102-109"},
+          {"ad": "Onluq kəsrlərin bölünməsi", "sehife": "110-117"}
+        ]
+      },
+      {
+        "bolme": "Faiz",
+        "movzular": [
+          {"ad": "Faiz, adi kəsr, onluq kəsr", "sehife": "120-121"},
+          {"ad": "Ədədin faizi", "sehife": "122-123"},
+          {"ad": "Faizinə görə ədədin tapılması", "sehife": "124-125"},
+          {"ad": "Kəmiyyətin faizlə artırılması və azaldılması", "sehife": "126-128"}
+        ]
+      }
+    ]
+  },
+  "6": {
+    "bolmeler": [
+      {
+        "bolme": "Natural ədədlər və əməllər",
+        "movzular": [
+          {"ad": "Natural ədədin qüvvəti", "sehife": "8-13"},
+          {"ad": "Sadə və mürəkkəb ədədlər", "sehife": "14-19"},
+          {"ad": "ƏBO — Ən Böyük Ortaq Bölən", "sehife": "20-23"},
+          {"ad": "ƏKO — Ən Kiçik Ortaq Bölünən", "sehife": "24-28"}
+        ]
+      },
+      {
+        "bolme": "Nisbət, tənasüb, faiz",
+        "movzular": [
+          {"ad": "Nisbət", "sehife": "30-31"},
+          {"ad": "Kəmiyyətlərin nisbəti", "sehife": "32-35"},
+          {"ad": "Kəmiyyətin verilən nisbətdə bölünməsi", "sehife": "36-39"},
+          {"ad": "Tənasüb", "sehife": "40-43"},
+          {"ad": "Miqyas", "sehife": "44-47"},
+          {"ad": "Düz tənasüb asılılıq", "sehife": "48-49"},
+          {"ad": "Tərs tənasüb asılılıq", "sehife": "50-51"},
+          {"ad": "Nisbətin faizlə ifadəsi", "sehife": "56-69"}
+        ]
+      },
+      {
+        "bolme": "Tam ədədlər",
+        "movzular": [
+          {"ad": "Tam ədədlər (müsbət, mənfi, sıfır)", "sehife": "72-75"},
+          {"ad": "Tam ədədlərin müqayisəsi və sıralanması", "sehife": "76-77"},
+          {"ad": "Mütləq qiymət", "sehife": "78-79"},
+          {"ad": "Tam ədədlərin toplanması", "sehife": "80-83"},
+          {"ad": "Tam ədədlərin çıxılması", "sehife": "84-85"},
+          {"ad": "Tam ədədlərin vurulması və bölünməsi", "sehife": "88-101"}
+        ]
+      },
+      {
+        "bolme": "Düzbucaqlı koordinat sistemi",
+        "movzular": [
+          {"ad": "Düzbucaqlı koordinat sistemi", "sehife": "104-107"},
+          {"ad": "Koordinat sistemində məsafə", "sehife": "108-111"},
+          {"ad": "Koordinat sistemində simmetriya və yerdəyişmə", "sehife": "112-117"}
+        ]
+      },
+      {
+        "bolme": "Rasional ədədlər (II hissə)",
+        "movzular": [
+          {"ad": "Rasional ədədlər", "sehife": "8-11"},
+          {"ad": "Rasional ədədlərin toplanması və çıxılması", "sehife": "12-23"},
+          {"ad": "Rasional ədədlərin vurulması və bölünməsi", "sehife": "24-35"}
+        ]
+      },
+      {
+        "bolme": "Cəbri ifadələr (II hissə)",
+        "movzular": [
+          {"ad": "Cəbri ifadələr", "sehife": "38-41"},
+          {"ad": "Cəbri ifadələrin sadələşdirilməsi", "sehife": "42-49"},
+          {"ad": "Xətti tənliklər", "sehife": "50-57"},
+          {"ad": "Bərabərsizliklər", "sehife": "58-65"}
+        ]
+      },
+      {
+        "bolme": "Həndəsə (II hissə)",
+        "movzular": [
+          {"ad": "Bucaq. Bucağın ölçülməsi", "sehife": "68-75"},
+          {"ad": "Qonşu və qarşı bucaqlar", "sehife": "76-83"},
+          {"ad": "Paralel düz xətlər", "sehife": "84-91"},
+          {"ad": "Üçbucaq və onun xassələri", "sehife": "92-103"},
+          {"ad": "Çevrə və dairə", "sehife": "104-111"}
+        ]
+      },
+      {
+        "bolme": "Statistika (II hissə)",
+        "movzular": [
+          {"ad": "Statistik verilənlərin toplanması", "sehife": "114-119"},
+          {"ad": "Orta hesabi, median, moda", "sehife": "120-127"},
+          {"ad": "Diaqramlar (sütunlu, dairəvi, xətti)", "sehife": "128-137"}
+        ]
+      }
+    ]
+  },
+  "7": {
+    "bolmeler": [
+      {
+        "bolme": "Nisbət və tənasüb",
+        "movzular": [
+          {"ad": "Nisbət, mütənasiblik", "sehife": "8-15"},
+          {"ad": "Düz mütənasiblik", "sehife": "16-23"},
+          {"ad": "Tərs mütənasiblik", "sehife": "24-31"},
+          {"ad": "Faiz hesablamaları", "sehife": "32-39"}
+        ]
+      },
+      {
+        "bolme": "Cəbri ifadələr",
+        "movzular": [
+          {"ad": "Birhədlilər", "sehife": "42-49"},
+          {"ad": "Çoxhədlilər", "sehife": "50-57"},
+          {"ad": "Çoxhədlilərlə əməllər", "sehife": "58-67"},
+          {"ad": "Vuruqlara ayırma", "sehife": "68-79"}
+        ]
+      },
+      {
+        "bolme": "Xətti tənlik və tənliklər sistemi",
+        "movzular": [
+          {"ad": "Bir dəyişənli xətti tənliklər", "sehife": "82-89"},
+          {"ad": "İki dəyişənli xətti tənliklər", "sehife": "90-97"},
+          {"ad": "Xətti tənliklər sistemi", "sehife": "98-107"}
+        ]
+      },
+      {
+        "bolme": "Funksiya və qrafik",
+        "movzular": [
+          {"ad": "Funksiya anlayışı", "sehife": "110-117"},
+          {"ad": "Xətti funksiya y=kx+b", "sehife": "118-127"},
+          {"ad": "Funksiyanın qrafiki", "sehife": "128-137"}
+        ]
+      },
+      {
+        "bolme": "Həndəsə",
+        "movzular": [
+          {"ad": "Çevrə, dairə, qövs", "sehife": "140-149"},
+          {"ad": "Çevrənin uzunluğu və dairənin sahəsi", "sehife": "150-159"},
+          {"ad": "Üçbucağın sahəsi", "sehife": "160-167"},
+          {"ad": "Dördbucaqlıların sahəsi", "sehife": "168-177"}
+        ]
+      },
+      {
+        "bolme": "Statistika və ehtimal",
+        "movzular": [
+          {"ad": "Ehtimal anlayışı", "sehife": "180-187"},
+          {"ad": "Klassik ehtimal", "sehife": "188-195"},
+          {"ad": "Kombinatorika əsasları", "sehife": "196-203"}
+        ]
+      }
+    ]
+  },
+  "8": {
+    "bolmeler": [
+      {
+        "bolme": "Həqiqi ədədlər",
+        "movzular": [
+          {"ad": "Kvadrat kök", "sehife": "8-17"},
+          {"ad": "İrrasional ədədlər", "sehife": "18-25"},
+          {"ad": "Həqiqi ədədlər", "sehife": "26-33"}
+        ]
+      },
+      {
+        "bolme": "Çoxhədlilər",
+        "movzular": [
+          {"ad": "Çoxhədlilərlə əməllər", "sehife": "36-45"},
+          {"ad": "Vuruqlara ayırma üsulları", "sehife": "46-55"},
+          {"ad": "Cəbri kəsrlər", "sehife": "56-67"}
+        ]
+      },
+      {
+        "bolme": "Tənliklər və bərabərsizliklər",
+        "movzular": [
+          {"ad": "Xətti bərabərsizliklər", "sehife": "70-79"},
+          {"ad": "Xətti bərabərsizliklər sistemi", "sehife": "80-89"},
+          {"ad": "Modullu tənlik və bərabərsizliklər", "sehife": "90-97"}
+        ]
+      },
+      {
+        "bolme": "Həndəsə",
+        "movzular": [
+          {"ad": "Pifaqor teoremi", "sehife": "100-113"},
+          {"ad": "Oxşar üçbucaqlar", "sehife": "114-127"},
+          {"ad": "Üçbucaqda tənlik münasibətləri", "sehife": "128-137"},
+          {"ad": "Vektor anlayışı", "sehife": "138-149"}
+        ]
+      },
+      {
+        "bolme": "Statistika",
+        "movzular": [
+          {"ad": "Statistik yayılma göstəriciləri", "sehife": "152-161"},
+          {"ad": "Ehtimal (hadisələrlə əməllər)", "sehife": "162-173"}
+        ]
+      }
+    ]
+  },
+  "9": {
+    "bolmeler": [
+      {
+        "bolme": "Kvadrat tənliklər",
+        "movzular": [
+          {"ad": "Kvadrat tənlik, diskriminant", "sehife": "8-19"},
+          {"ad": "Vyet teoremi", "sehife": "20-27"},
+          {"ad": "Kvadrat tənliyə gətirilən tənliklər", "sehife": "28-37"},
+          {"ad": "Tənliklər sistemi (xətti olmayan)", "sehife": "38-49"}
+        ]
+      },
+      {
+        "bolme": "Kvadrat funksiya",
+        "movzular": [
+          {"ad": "y=x² funksiyası və qrafiki (parabola)", "sehife": "52-61"},
+          {"ad": "y=ax²+bx+c funksiyası", "sehife": "62-73"},
+          {"ad": "Kvadrat bərabərsizliklər", "sehife": "74-85"}
+        ]
+      },
+      {
+        "bolme": "Triqonometriya",
+        "movzular": [
+          {"ad": "Sinus, kosinus, tangens", "sehife": "88-99"},
+          {"ad": "Triqonometrik eyniliklər", "sehife": "100-109"},
+          {"ad": "Düzbucaqlı üçbucağın həlli", "sehife": "110-119"},
+          {"ad": "Sinuslar və kosinuslar teoremi", "sehife": "120-131"}
+        ]
+      },
+      {
+        "bolme": "Həndəsə",
+        "movzular": [
+          {"ad": "Vektor əməlləri", "sehife": "134-145"},
+          {"ad": "Koordinat metodu", "sehife": "146-157"},
+          {"ad": "Dönmə, öteleme, simmetriya", "sehife": "158-167"}
+        ]
+      },
+      {
+        "bolme": "Statistika və ehtimal",
+        "movzular": [
+          {"ad": "Kombinatorika (yerləşdirmə, birləşmə)", "sehife": "170-181"},
+          {"ad": "Nyuton binomu", "sehife": "182-189"},
+          {"ad": "Ehtimal nəzəriyyəsi, Bernulli", "sehife": "190-201"}
+        ]
+      }
+    ]
+  },
+  "10": {
+    "bolmeler": [
+      {
+        "bolme": "Triqonometrik funksiyalar",
+        "movzular": [
+          {"ad": "Triqonometrik funksiyalar və qrafikləri", "sehife": "8-21"},
+          {"ad": "Triqonometrik tənliklər", "sehife": "22-37"},
+          {"ad": "Triqonometrik bərabərsizliklər", "sehife": "38-49"}
+        ]
+      },
+      {
+        "bolme": "Göstərici və loqarifmik funksiya",
+        "movzular": [
+          {"ad": "Göstərici funksiya y=aˣ", "sehife": "52-63"},
+          {"ad": "Göstərici tənlik və bərabərsizliklər", "sehife": "64-75"},
+          {"ad": "Loqarifm anlayışı", "sehife": "76-87"},
+          {"ad": "Loqarifmik funksiya", "sehife": "88-97"},
+          {"ad": "Loqarifmik tənlik və bərabərsizliklər", "sehife": "98-111"}
+        ]
+      },
+      {
+        "bolme": "Fəza həndəsəsi",
+        "movzular": [
+          {"ad": "Fəzada nöqtə, düz xətt, müstəvi", "sehife": "114-125"},
+          {"ad": "Prizma (düz, mailli)", "sehife": "126-137"},
+          {"ad": "Piramida", "sehife": "138-149"},
+          {"ad": "Prizma və piramidanın həcmi", "sehife": "150-161"}
+        ]
+      },
+      {
+        "bolme": "Statistika",
+        "movzular": [
+          {"ad": "Statistik paylanmalar", "sehife": "164-173"},
+          {"ad": "Standart kənarlaşma, dispersiya", "sehife": "174-183"},
+          {"ad": "Reqressiya, korrelyasiya", "sehife": "184-195"}
+        ]
+      }
+    ]
+  },
+  "11": {
+    "bolmeler": [
+      {
+        "bolme": "Limit və törəmə",
+        "movzular": [
+          {"ad": "Ardıcıllıq, ardıcıllığın limiti", "sehife": "8-19"},
+          {"ad": "Funksiyanın limiti", "sehife": "20-31"},
+          {"ad": "Törəmə anlayışı", "sehife": "32-43"},
+          {"ad": "Törəmə qaydaları", "sehife": "44-55"},
+          {"ad": "Törəmənin tətbiqləri (ekstremal məsələlər)", "sehife": "56-69"},
+          {"ad": "Funksiyanın tədqiqi və qrafiki", "sehife": "70-83"}
+        ]
+      },
+      {
+        "bolme": "İnteqral",
+        "movzular": [
+          {"ad": "İlk funksiya (antitörəmə)", "sehife": "86-95"},
+          {"ad": "Qeyri-müəyyən inteqral", "sehife": "96-105"},
+          {"ad": "Müəyyən inteqral", "sehife": "106-117"},
+          {"ad": "İnteqralın tətbiqləri (sahə hesablama)", "sehife": "118-129"}
+        ]
+      },
+      {
+        "bolme": "Fəza həndəsəsi",
+        "movzular": [
+          {"ad": "Silindr", "sehife": "132-141"},
+          {"ad": "Konus", "sehife": "142-151"},
+          {"ad": "Kürə", "sehife": "152-161"},
+          {"ad": "Fırlanma cisimləri, həcm və sahə", "sehife": "162-175"}
+        ]
+      },
+      {
+        "bolme": "Ehtimal nəzəriyyəsi",
+        "movzular": [
+          {"ad": "Şərti ehtimal", "sehife": "178-187"},
+          {"ad": "Böyük ədədlər qanunu", "sehife": "188-195"},
+          {"ad": "Normal paylanma", "sehife": "196-207"}
+        ]
+      }
+    ]
+  }
+}

@@ -12,7 +12,9 @@ library(jsonlite)
 PLOTLY_OK <- tryCatch({ library(plotly); TRUE }, error = function(e) {
   message("plotly yuklenmedi: ", e$message); FALSE })
 
-APP_DIR  <- normalizePath("~/Desktop/Riy_Muellim_Agent", mustWork = FALSE)
+LOCAL_DIR <- normalizePath("~/Desktop/Riy_Muellim_Agent", mustWork = FALSE)
+APP_DIR   <- if (dir.exists(LOCAL_DIR)) LOCAL_DIR else getwd()
+
 env_file <- file.path(APP_DIR, ".env")
 if (file.exists(env_file)) {
   for (line in readLines(env_file, warn = FALSE)) {
@@ -24,7 +26,8 @@ if (file.exists(env_file)) {
   }
 }
 
-CHUNKS_DIR     <- file.path(APP_DIR, "derslikler", "chunks")
+DATA_DIR       <- file.path(APP_DIR, "derslikler")
+CHUNKS_DIR     <- file.path(DATA_DIR, "chunks")
 CLAUDE_MODEL   <- Sys.getenv("DEFAULT_AI_MODEL", "claude-sonnet-4-20250514")
 CLAUDE_ENDPOINT <- "https://api.anthropic.com/v1/messages"
 DERS_DIR <- file.path(APP_DIR, "Ders_planlari")
@@ -38,7 +41,7 @@ dir.create(MSG_DIR,  showWarnings = FALSE, recursive = TRUE)
 
 # ═══════════════ STANDARTLAR ═══════════════
 ALL_STANDARDS <- tryCatch(
-  fromJSON(file.path(APP_DIR, "derslikler", "standards.json"), simplifyVector = FALSE),
+  fromJSON(file.path(DATA_DIR, "standards.json"), simplifyVector = FALSE),
   error = function(e) { message("standards.json: ", e$message); list() })
 
 get_standards_dropdown <- function(grade) {
@@ -56,7 +59,7 @@ get_standards_dropdown <- function(grade) {
 
 # ═══════════════ MOVZULAR ═══════════════
 ALL_TOPICS <- tryCatch(
-  fromJSON(file.path(APP_DIR, "derslikler", "topics.json"), simplifyVector = FALSE),
+  fromJSON(file.path(DATA_DIR, "topics.json"), simplifyVector = FALSE),
   error = function(e) { message("topics.json: ", e$message); list() })
 
 get_topics_for_grade <- function(grade) {
