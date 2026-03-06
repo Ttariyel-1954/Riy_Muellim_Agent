@@ -129,9 +129,9 @@ call_claude <- function(prompt) {
   tryCatch({
     resp <- POST(CLAUDE_ENDPOINT,
       add_headers(`x-api-key` = key, `anthropic-version` = "2023-06-01", `content-type` = "application/json"),
-      body = toJSON(list(model = CLAUDE_MODEL, max_tokens = 4096,
+      body = toJSON(list(model = CLAUDE_MODEL, max_tokens = 16384,
                          messages = list(list(role = "user", content = prompt))), auto_unbox = TRUE),
-      encode = "raw", timeout(180))
+      encode = "raw", timeout(300))
     elapsed <- round(as.numeric(proc.time()["elapsed"] - t0), 1)
     res <- content(resp, "parsed", encoding = "UTF-8")
     inp_tok <- as.integer(res$usage$input_tokens %||% 0)
@@ -261,6 +261,8 @@ HTML5_CSS <- '<style>
 .stats-block h3,.analysis-block h3{margin:0 0 18px;color:#fbbf24;font-size:1.43em}
 .stat-row{padding:10px 0;border-bottom:1px solid rgba(255,255,255,.08);font-size:1.17em;line-height:1.6}
 .stat-row:last-child{border-bottom:none}
+.lang-section{margin-top:36px;padding:24px 0;border-top:4px solid #3b82f6}
+.lang-section h2{background:linear-gradient(135deg,#1e40af,#3b82f6);color:#fff;padding:16px 28px;border-radius:12px;font-size:1.5em;display:inline-block;margin:0 0 20px}
 .arti-footer{text-align:center;margin-top:36px;padding:18px;color:#94a3b8;font-size:1.04em;border-top:2px solid #e2e8f0}
 @media print{.answer-box,.question-block,.phase{page-break-inside:avoid}.ai-output{font-size:12pt}}
 @media(max-width:768px){.options{grid-template-columns:1fr}.meta-grid{grid-template-columns:1fr}.differentiation{grid-template-columns:1fr}}
@@ -270,6 +272,27 @@ HTML5_CSS <- '<style>
 build_test_prompt <- function(grade, topic, standard, context, count, blooms, dok) {
   paste0(
 'Sen dunya tehsilinin aparici olkelerinin (Finlandiya, Sinqapur, Estoniya, Yaponiya, Yeni Zelandiya) qiymetlendirme standartlarina uygun test tapshiriqlari yaradan ekspert psixometr ve riyaziyyat metodist AI-san.
+
+═══════════════════════════════════════
+DILLER (COX VACIB!):
+═══════════════════════════════════════
+Neticeni 3 DILDE ver — her dil ayrica bolme sheklinde:
+1. AZERBAYCAN DILI (esas ve birinci)
+2. RUS DILI (tam tercume)
+3. INGILIS DILI (tam tercume)
+
+Her dil bolmesi bu bashliq ile bashlamalidir:
+<div class="lang-section" style="margin-top:36px;padding:24px 0;border-top:4px solid #3b82f6;">
+  <h2 style="background:linear-gradient(135deg,#1e40af,#3b82f6);color:#fff;padding:16px 28px;border-radius:12px;font-size:1.5em;display:inline-block;">
+    [BAYRAQ_EMOJI] [DIL ADI]
+  </h2>
+</div>
+Bayraqlar: Azerbaycan dili ucun 🇦🇿, Rus dili ucun 🇷🇺, Ingilis dili ucun 🇬🇧
+
+Her bolmede HER tapshiriq, cavab, hell, analiz — HERSEY tam shekilde tercume olunmalidir.
+Risazi ifadeler, ededler, formullar EYNI qalir — yalniz metn hissesi tercume olunur.
+
+DOLGUNLUQ: Her tapshiriqda MINIMUM 4 addimli hell, 2+ alternativ yol, muefesssel distraktor analizi, ve ipucu ver.
 
 ═══════════════════════════════════════
 PARAMETRLER:
@@ -427,6 +450,27 @@ build_lesson_prompt <- function(grade, topic, standard, context, duration, bloom
 'Sen dunya tehsilinin aparici olkelerinin (Finlandiya, Sinqapur, Estoniya, Yaponiya) metodologiyalarina uygun ders planlari hazirlayan ekspert metodist AI-san.
 
 ═══════════════════════════════════════
+DILLER (COX VACIB!):
+═══════════════════════════════════════
+Neticeni 3 DILDE ver — her dil ayrica bolme sheklinde:
+1. AZERBAYCAN DILI (esas ve birinci)
+2. RUS DILI (tam tercume)
+3. INGILIS DILI (tam tercume)
+
+Her dil bolmesi bu bashliq ile bashlamalidir:
+<div class="lang-section" style="margin-top:36px;padding:24px 0;border-top:4px solid #3b82f6;">
+  <h2 style="background:linear-gradient(135deg,#1e40af,#3b82f6);color:#fff;padding:16px 28px;border-radius:12px;font-size:1.5em;display:inline-block;">
+    [BAYRAQ_EMOJI] [DIL ADI]
+  </h2>
+</div>
+Bayraqlar: Azerbaycan dili ucun 🇦🇿, Rus dili ucun 🇷🇺, Ingilis dili ucun 🇬🇧
+
+Her bolmede ders planinin butun merhelelerini, muellim/shagird fealiyyetlerini, tapshiriqlari, analizi — HERSEY tam shekilde tercume et.
+Riyazi ifadeler, ededler, formullar EYNI qalir — yalniz metn hissesi tercume olunur.
+
+DOLGUNLUQ: Her merhelede muellimin DEQIQ dediklerini, shagird reaksiyalarini, konkret numuneleri, elave suallari musefesssel yaz.
+
+═══════════════════════════════════════
 PARAMETRLER:
 ═══════════════════════════════════════
 SINIF: ', grade, '-ci sinif
@@ -578,6 +622,12 @@ build_doc_prompt <- function(doc_type, grade, period, extra, official) {
   off_text <- if (official) "\nResmi format: movzu, tarix, imza yeri, mohr yeri elave et." else ""
   paste0('Sen Azerbaijan mekteb muellimi ucun resmi senedler hazirlayan ekspert AI-san.\nSENED TIPI: ', label,
     '\nSINIF: ', grade, '-ci sinif\nDOVR: ', period, '\nELAVE: ', extra, off_text,
+    '\n\nDILLER: Neticeni 3 DILDE ver (ayrica bolmeler sheklinde):
+1. 🇦🇿 AZERBAYCAN DILI (birinci ve esas)
+2. 🇷🇺 RUS DILI (tam tercume)
+3. 🇬🇧 INGILIS DILI (tam tercume)
+Her dil bolmesinden evvel <div style="margin-top:36px;padding:24px 0;border-top:4px solid #3b82f6;"><h2 style="background:linear-gradient(135deg,#1e40af,#3b82f6);color:#fff;padding:16px 28px;border-radius:12px;font-size:1.5em;display:inline-block;">[BAYRAQ] [DIL ADI]</h2></div> yaz.
+DOLGUNLUQ: Senedi tam ve musefesssel yaz, her bolmeni genish shekilde izah et.\n',
     '\nNeticeni TAM HTML formatinda ver. Derslik istinadlari.\n',
     'HTML: <div class="lesson-header"><h1>', label, '</h1><div class="meta-grid">',
     '<div class="meta-item"><span class="label">Sinif:</span> ', grade, '-ci</div>',
@@ -594,7 +644,14 @@ build_msg_prompt <- function(msg_type, cls, student, channel, context, tone) {
   tone_az <- c(formal="resmi",friendly="dostane",serious="ciddi",encouraging="ruhlendirici")
   paste0('Sen Azerbaijan mekteb muellimi ucun mesajlar yazan ekspert AI-san.\nMESAJ: ', label,
     '\nSINIF: ', cls, ' | SHAGIRD: ', student, '\nKANAL: ', ch_label, ' | TON: ', tone_az[tone] %||% "resmi",
-    '\nKONTEKST: ', context, '\nNeticeni TAM HTML formatinda ver.\n',
+    '\nKONTEKST: ', context,
+    '\n\nDILLER: Mesaji 3 DILDE ver (ayrica bolmeler sheklinde):
+1. 🇦🇿 AZERBAYCAN DILI (birinci ve esas)
+2. 🇷🇺 RUS DILI (tam tercume)
+3. 🇬🇧 INGILIS DILI (tam tercume)
+Her dil bolmesinden evvel <div style="margin-top:28px;padding:18px 0;border-top:3px solid #3b82f6;"><h3 style="background:linear-gradient(135deg,#1e40af,#3b82f6);color:#fff;padding:12px 22px;border-radius:10px;font-size:1.3em;display:inline-block;">[BAYRAQ] [DIL ADI]</h3></div> yaz.
+DOLGUNLUQ: Mesaji tam ve professional shekilde yaz, konkret melumatlar ve tovsiyyeler daxil et.\n',
+    '\nNeticeni TAM HTML formatinda ver.\n',
     'HTML: <div class="lesson-header" style="padding:24px;"><h1 style="font-size:1.6em;">', label, '</h1>',
     '<div class="meta-grid"><div class="meta-item"><span class="label">Kanal:</span> ', ch_label, '</div>',
     '<div class="meta-item"><span class="label">Shagird:</span> ', student, '</div></div></div>')
