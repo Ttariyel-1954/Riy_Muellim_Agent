@@ -129,7 +129,7 @@ call_claude <- function(prompt) {
   tryCatch({
     resp <- POST(CLAUDE_ENDPOINT,
       add_headers(`x-api-key` = key, `anthropic-version` = "2023-06-01", `content-type` = "application/json"),
-      body = toJSON(list(model = CLAUDE_MODEL, max_tokens = 16384,
+      body = toJSON(list(model = CLAUDE_MODEL, max_tokens = if (grepl("haiku", CLAUDE_MODEL)) 4096L else 16384L,
                          messages = list(list(role = "user", content = prompt))), auto_unbox = TRUE),
       encode = "raw", timeout(300))
     elapsed <- round(as.numeric(proc.time()["elapsed"] - t0), 1)
@@ -268,18 +268,23 @@ HTML5_CSS <- '<style>
 @media(max-width:768px){.options{grid-template-columns:1fr}.meta-grid{grid-template-columns:1fr}.differentiation{grid-template-columns:1fr}}
 </style>'
 
-# ═══════════════ PROMPTS ═══════════════
-build_test_prompt <- function(grade, topic, standard, context, count, blooms, dok) {
-  paste0(
-'Sen dunya tehsilinin aparici olkelerinin (Finlandiya, Sinqapur, Estoniya, Yaponiya, Yeni Zelandiya) qiymetlendirme standartlarina uygun test tapshiriqlari yaradan ekspert psixometr ve riyaziyyat metodist AI-san.
-
+# ═══════════════ DIL HELPER ═══════════════
+build_lang_instruction <- function(langs) {
+  if (is.null(langs) || length(langs) == 0) langs <- "az"
+  LANG_NAMES <- c(az = "AZERBAYCAN DILI", ru = "RUS DILI", en = "INGILIS DILI")
+  LANG_FLAGS <- c(az = "\U0001F1E6\U0001F1FF", ru = "\U0001F1F7\U0001F1FA", en = "\U0001F1EC\U0001F1E7")
+  if (length(langs) == 1 && langs == "az") {
+    return("\nDIL: Neticeni YALNIZ Azerbaycan dilinde yaz.\nDOLGUNLUQ: Cavabi musefesssel ve tam yaz — her tapshiriqda minimum 4 addimli hell, alternativ yollar, konkret numuneler.\n")
+  }
+  lang_list <- paste(sapply(seq_along(langs), function(i) {
+    paste0(i, ". ", LANG_FLAGS[langs[i]], " ", LANG_NAMES[langs[i]])
+  }), collapse = "\n")
+  paste0('
 ═══════════════════════════════════════
 DILLER (COX VACIB!):
 ═══════════════════════════════════════
-Neticeni 3 DILDE ver — her dil ayrica bolme sheklinde:
-1. AZERBAYCAN DILI (esas ve birinci)
-2. RUS DILI (tam tercume)
-3. INGILIS DILI (tam tercume)
+Neticeni ', length(langs), ' DILDE ver — her dil ayrica bolme sheklinde:
+', lang_list, '
 
 Her dil bolmesi bu bashliq ile bashlamalidir:
 <div class="lang-section" style="margin-top:36px;padding:24px 0;border-top:4px solid #3b82f6;">
@@ -287,13 +292,19 @@ Her dil bolmesi bu bashliq ile bashlamalidir:
     [BAYRAQ_EMOJI] [DIL ADI]
   </h2>
 </div>
-Bayraqlar: Azerbaycan dili ucun 🇦🇿, Rus dili ucun 🇷🇺, Ingilis dili ucun 🇬🇧
 
-Her bolmede HER tapshiriq, cavab, hell, analiz — HERSEY tam shekilde tercume olunmalidir.
-Risazi ifadeler, ededler, formullar EYNI qalir — yalniz metn hissesi tercume olunur.
+Her bolmede HERSEY tam shekilde tercume olunmalidir (tapshiriqlar, cavablar, helller, analiz).
+Riyazi ifadeler, ededler, formullar EYNI qalir — yalniz metn hissesi tercume olunur.
+DOLGUNLUQ: Cavabi musefesssel ve tam yaz — her tapshiriqda minimum 4 addimli hell, alternativ yollar, konkret numuneler.
+')
+}
 
-DOLGUNLUQ: Her tapshiriqda MINIMUM 4 addimli hell, 2+ alternativ yol, muefesssel distraktor analizi, ve ipucu ver.
-
+# ═══════════════ PROMPTS ═══════════════
+build_test_prompt <- function(grade, topic, standard, context, count, blooms, dok, langs = c("az")) {
+  lang_inst <- build_lang_instruction(langs)
+  paste0(
+'Sen dunya tehsilinin aparici olkelerinin (Finlandiya, Sinqapur, Estoniya, Yaponiya, Yeni Zelandiya) qiymetlendirme standartlarina uygun test tapshiriqlari yaradan ekspert psixometr ve riyaziyyat metodist AI-san.
+', lang_inst, '
 ═══════════════════════════════════════
 PARAMETRLER:
 ═══════════════════════════════════════
@@ -443,33 +454,13 @@ Sonda MUTLEQ bu analiz blokunu elave et:
 </div>')
 }
 
-build_lesson_prompt <- function(grade, topic, standard, context, duration, blooms, dok) {
+build_lesson_prompt <- function(grade, topic, standard, context, duration, blooms, dok, langs = c("az")) {
+  lang_inst <- build_lang_instruction(langs)
   m1 <- as.integer(duration * 0.10); m2 <- as.integer(duration * 0.30)
   m3 <- as.integer(duration * 0.25); m4 <- as.integer(duration * 0.25); m5 <- as.integer(duration * 0.10)
   paste0(
 'Sen dunya tehsilinin aparici olkelerinin (Finlandiya, Sinqapur, Estoniya, Yaponiya) metodologiyalarina uygun ders planlari hazirlayan ekspert metodist AI-san.
-
-═══════════════════════════════════════
-DILLER (COX VACIB!):
-═══════════════════════════════════════
-Neticeni 3 DILDE ver — her dil ayrica bolme sheklinde:
-1. AZERBAYCAN DILI (esas ve birinci)
-2. RUS DILI (tam tercume)
-3. INGILIS DILI (tam tercume)
-
-Her dil bolmesi bu bashliq ile bashlamalidir:
-<div class="lang-section" style="margin-top:36px;padding:24px 0;border-top:4px solid #3b82f6;">
-  <h2 style="background:linear-gradient(135deg,#1e40af,#3b82f6);color:#fff;padding:16px 28px;border-radius:12px;font-size:1.5em;display:inline-block;">
-    [BAYRAQ_EMOJI] [DIL ADI]
-  </h2>
-</div>
-Bayraqlar: Azerbaycan dili ucun 🇦🇿, Rus dili ucun 🇷🇺, Ingilis dili ucun 🇬🇧
-
-Her bolmede ders planinin butun merhelelerini, muellim/shagird fealiyyetlerini, tapshiriqlari, analizi — HERSEY tam shekilde tercume et.
-Riyazi ifadeler, ededler, formullar EYNI qalir — yalniz metn hissesi tercume olunur.
-
-DOLGUNLUQ: Her merhelede muellimin DEQIQ dediklerini, shagird reaksiyalarini, konkret numuneleri, elave suallari musefesssel yaz.
-
+', lang_inst, '
 ═══════════════════════════════════════
 PARAMETRLER:
 ═══════════════════════════════════════
@@ -614,27 +605,23 @@ Sonda MUTLEQ bu analiz blokunu yaz:
 </div>')
 }
 
-build_doc_prompt <- function(doc_type, grade, period, extra, official) {
+build_doc_prompt <- function(doc_type, grade, period, extra, official, langs = c("az")) {
   DOC_LABELS <- c(journal="Gundlik jurnal",monthly_plan="Ayliq plan",yearly_plan="Illik plan",
     activity_report="Fealiyyet hesabati",olympiad="Olimpiada plani",parent_meeting="Valideyn toplantisi protokolu",
     open_lesson="Aciq ders plani",self_eval="Oz-ozunu qiymetlendirme")
   label <- DOC_LABELS[doc_type] %||% doc_type
   off_text <- if (official) "\nResmi format: movzu, tarix, imza yeri, mohr yeri elave et." else ""
+  lang_inst <- build_lang_instruction(langs)
   paste0('Sen Azerbaijan mekteb muellimi ucun resmi senedler hazirlayan ekspert AI-san.\nSENED TIPI: ', label,
     '\nSINIF: ', grade, '-ci sinif\nDOVR: ', period, '\nELAVE: ', extra, off_text,
-    '\n\nDILLER: Neticeni 3 DILDE ver (ayrica bolmeler sheklinde):
-1. 🇦🇿 AZERBAYCAN DILI (birinci ve esas)
-2. 🇷🇺 RUS DILI (tam tercume)
-3. 🇬🇧 INGILIS DILI (tam tercume)
-Her dil bolmesinden evvel <div style="margin-top:36px;padding:24px 0;border-top:4px solid #3b82f6;"><h2 style="background:linear-gradient(135deg,#1e40af,#3b82f6);color:#fff;padding:16px 28px;border-radius:12px;font-size:1.5em;display:inline-block;">[BAYRAQ] [DIL ADI]</h2></div> yaz.
-DOLGUNLUQ: Senedi tam ve musefesssel yaz, her bolmeni genish shekilde izah et.\n',
+    lang_inst,
     '\nNeticeni TAM HTML formatinda ver. Derslik istinadlari.\n',
     'HTML: <div class="lesson-header"><h1>', label, '</h1><div class="meta-grid">',
     '<div class="meta-item"><span class="label">Sinif:</span> ', grade, '-ci</div>',
     '<div class="meta-item"><span class="label">Dovr:</span> ', period, '</div></div></div>')
 }
 
-build_msg_prompt <- function(msg_type, cls, student, channel, context, tone) {
+build_msg_prompt <- function(msg_type, cls, student, channel, context, tone, langs = c("az")) {
   MSG_LABELS <- c(parent_report="Valideyn hesabati",praise="Ugur mektubu",warning="Xeberdarliq",
     motivation="Motivasiya mesaji",olympiad_invite="Olimpiada daveti",homework_notice="Ev tapshirigi bildirisi",
     meeting_invite="Toplanti daveti",class_report="Sinif raportu")
@@ -645,12 +632,7 @@ build_msg_prompt <- function(msg_type, cls, student, channel, context, tone) {
   paste0('Sen Azerbaijan mekteb muellimi ucun mesajlar yazan ekspert AI-san.\nMESAJ: ', label,
     '\nSINIF: ', cls, ' | SHAGIRD: ', student, '\nKANAL: ', ch_label, ' | TON: ', tone_az[tone] %||% "resmi",
     '\nKONTEKST: ', context,
-    '\n\nDILLER: Mesaji 3 DILDE ver (ayrica bolmeler sheklinde):
-1. 🇦🇿 AZERBAYCAN DILI (birinci ve esas)
-2. 🇷🇺 RUS DILI (tam tercume)
-3. 🇬🇧 INGILIS DILI (tam tercume)
-Her dil bolmesinden evvel <div style="margin-top:28px;padding:18px 0;border-top:3px solid #3b82f6;"><h3 style="background:linear-gradient(135deg,#1e40af,#3b82f6);color:#fff;padding:12px 22px;border-radius:10px;font-size:1.3em;display:inline-block;">[BAYRAQ] [DIL ADI]</h3></div> yaz.
-DOLGUNLUQ: Mesaji tam ve professional shekilde yaz, konkret melumatlar ve tovsiyyeler daxil et.\n',
+    build_lang_instruction(langs),
     '\nNeticeni TAM HTML formatinda ver.\n',
     'HTML: <div class="lesson-header" style="padding:24px;"><h1 style="font-size:1.6em;">', label, '</h1>',
     '<div class="meta-grid"><div class="meta-item"><span class="label">Kanal:</span> ', ch_label, '</div>',
@@ -749,8 +731,9 @@ ui <- dashboardPage(skin = "blue",
           column(2, numericInput("lp_duration", "Muddet:", value = 45))),
         fluidRow(column(3, checkboxGroupInput("lp_bloom", "Bloom:", choices = c("Xatirlama","Anlama","Tetbiqetme","Tehlil","Qiymetlendirme","Yaratma"), selected = c("Anlama","Tetbiqetme","Tehlil"))),
           column(2, sliderInput("lp_dok", "DOK:", min = 1, max = 4, value = 2)),
-          column(2, actionButton("lp_generate", "AI ile Yarat", class = "btn-primary btn-lg btn-generate", style = "margin-top:25px;")),
-          column(3, uiOutput("lp_token_ui"))),
+          column(3, checkboxGroupInput("lp_lang", "Dil:", choices = c("Azerbaycan"="az","Rus"="ru","Ingilis"="en"), selected = c("az","ru","en"), inline = TRUE)),
+          column(2, actionButton("lp_generate", "AI ile Yarat", class = "btn-primary btn-lg btn-generate", style = "margin-top:25px;"))),
+        fluidRow(column(12, uiOutput("lp_token_ui"))),
         hr(), tags$div(id = "lp_timer_live"), uiOutput("lp_result")))),
       # === TEST ===
       tabItem(tabName = "test_create", fluidRow(box(title = "AI Test Generatoru", width = 12, solidHeader = TRUE, status = "success",
@@ -759,8 +742,9 @@ ui <- dashboardPage(skin = "blue",
           column(2, numericInput("tc_count", "Say:", value = 12, min = 5, max = 30))),
         fluidRow(column(3, checkboxGroupInput("tc_bloom", "Bloom:", choices = c("Xatirlama","Anlama","Tetbiqetme","Tehlil","Qiymetlendirme","Yaratma"), selected = c("Xatirlama","Anlama","Tetbiqetme","Tehlil","Qiymetlendirme"))),
           column(2, sliderInput("tc_dok", "DOK:", min = 1, max = 4, value = 3)),
-          column(2, actionButton("tc_generate", "Test Yarat", class = "btn-success btn-lg btn-generate", style = "margin-top:25px;")),
-          column(3, uiOutput("tc_token_ui"))),
+          column(3, checkboxGroupInput("tc_lang", "Dil:", choices = c("Azerbaycan"="az","Rus"="ru","Ingilis"="en"), selected = c("az","ru","en"), inline = TRUE)),
+          column(2, actionButton("tc_generate", "Test Yarat", class = "btn-success btn-lg btn-generate", style = "margin-top:25px;"))),
+        fluidRow(column(12, uiOutput("tc_token_ui"))),
         hr(), tags$div(id = "tc_timer_live"), uiOutput("tc_result")))),
       # === STANDARTLAR ===
       tabItem(tabName = "standards", fluidRow(box(title = "Kurikulum Standartlari", width = 12, solidHeader = TRUE,
@@ -816,6 +800,7 @@ ui <- dashboardPage(skin = "blue",
             textInput("doc_period", "Dovr/Movzu:", placeholder = "Mes: Mart 2026"),
             textAreaInput("doc_extra", "Elave melumat:", rows = 3, placeholder = "Xususi telebler..."),
             checkboxInput("doc_official", "Resmi format (mohr/imza yeri)", FALSE),
+            checkboxGroupInput("doc_lang", "Dil:", choices = c("Azerbaycan"="az","Rus"="ru","Ingilis"="en"), selected = c("az","ru","en"), inline = TRUE),
             actionButton("doc_generate", "Sened Yarat", class = "btn-primary btn-lg", style = "width:100%;font-weight:700;font-size:1.1em;", icon = icon("file-alt")),
             br(), br(), uiOutput("doc_token_ui")),
           box(title = "Netice", width = 7, solidHeader = TRUE, status = "info",
@@ -833,6 +818,7 @@ ui <- dashboardPage(skin = "blue",
             selectInput("msg_channel", "Kanal:", choices = c("WhatsApp"="whatsapp","SMS"="sms","E-pocht"="email","Portal"="portal")),
             textAreaInput("msg_context", "Elave kontekst:", rows = 3, placeholder = "Mes: Son testde 45% aldi..."),
             selectInput("msg_tone", "Ton:", choices = c("Resmi"="formal","Dostane"="friendly","Ciddi"="serious","Ruhlendirici"="encouraging")),
+            checkboxGroupInput("msg_lang", "Dil:", choices = c("Azerbaycan"="az","Rus"="ru","Ingilis"="en"), selected = c("az","ru","en"), inline = TRUE),
             actionButton("msg_generate", "Mesaj Yarat", class = "btn-success btn-lg", style = "width:100%;font-weight:700;font-size:1.1em;", icon = icon("paper-plane")),
             br(), br(), uiOutput("msg_token_ui")),
           box(title = "Mesaj Onizleme", width = 7, solidHeader = TRUE, status = "info",
@@ -893,10 +879,10 @@ server <- function(input, output, session) {
   observeEvent(input$lp_generate, {
     req(input$lp_grade, input$lp_topic, input$lp_standard)
     gr <- as.integer(input$lp_grade); tp <- input$lp_topic; st <- input$lp_standard
-    dur <- input$lp_duration; bl <- input$lp_bloom; dk <- input$lp_dok
+    dur <- input$lp_duration; bl <- input$lp_bloom; dk <- input$lp_dok; ln <- input$lp_lang
     run_ai_async(session, output, "lp_timer_live", "lp_token_ui", "lp_result",
       sprintf("Sinif: %d", gr), tp, "AI ile elaqe quruldu, ders plani yaradilir...",
-      function() { ctx <- build_context(gr, tp); build_lesson_prompt(gr, tp, st, ctx, dur, bl, dk) },
+      function() { ctx <- build_context(gr, tp); build_lesson_prompt(gr, tp, st, ctx, dur, bl, dk, ln) },
       function(text) save_result(text, HTML5_CSS, DERS_DIR, gr, tp, "ders_plani"),
       function() sprintf("ARTI 2026 | Sinif %d | %s | %d deq", gr, tp, dur))
   })
@@ -905,10 +891,10 @@ server <- function(input, output, session) {
   observeEvent(input$tc_generate, {
     req(input$tc_grade, input$tc_topic, input$tc_standard)
     gr <- as.integer(input$tc_grade); tp <- input$tc_topic; st <- input$tc_standard
-    cnt <- input$tc_count; bl <- input$tc_bloom; dk <- input$tc_dok
+    cnt <- input$tc_count; bl <- input$tc_bloom; dk <- input$tc_dok; ln <- input$tc_lang
     run_ai_async(session, output, "tc_timer_live", "tc_token_ui", "tc_result",
       sprintf("Sinif: %d", gr), sprintf("%s (%d tapshiriq)", tp, cnt), "AI ile elaqe quruldu, test yaradilir...",
-      function() { ctx <- build_context(gr, tp); build_test_prompt(gr, tp, st, ctx, cnt, bl, dk) },
+      function() { ctx <- build_context(gr, tp); build_test_prompt(gr, tp, st, ctx, cnt, bl, dk, ln) },
       function(text) save_result(text, HTML5_CSS, TEST_DIR, gr, tp, "test"),
       function() sprintf("ARTI 2026 | Sinif %d | %s | %d tapshiriq", gr, tp, cnt))
   })
@@ -917,14 +903,14 @@ server <- function(input, output, session) {
   observeEvent(input$doc_generate, {
     req(input$doc_type, input$doc_grade)
     dtype <- input$doc_type; grade <- input$doc_grade
-    period <- input$doc_period; extra <- input$doc_extra; official <- input$doc_official
+    period <- input$doc_period; extra <- input$doc_extra; official <- input$doc_official; ln <- input$doc_lang
     DOC_LABELS <- c(journal="Gundlik jurnal",monthly_plan="Ayliq plan",yearly_plan="Illik plan",
       activity_report="Fealiyyet hesabati",olympiad="Olimpiada plani",parent_meeting="Valideyn toplantisi",
       open_lesson="Aciq ders plani",self_eval="Oz-ozunu qiymetlendirme")
     label <- DOC_LABELS[dtype] %||% dtype
     run_ai_async(session, output, "doc_timer_live", "doc_token_ui", "doc_result",
       sprintf("Sinif: %s", grade), label, "AI sened yaradir...",
-      function() build_doc_prompt(dtype, grade, period, extra, official),
+      function() build_doc_prompt(dtype, grade, period, extra, official, ln),
       function(text) save_result(text, HTML5_CSS, DERS_DIR, as.integer(grade), label, "sened"),
       function() sprintf("ARTI 2026 | %s", label))
   })
@@ -944,14 +930,14 @@ server <- function(input, output, session) {
     req(input$msg_type, input$msg_class)
     mtype <- input$msg_type; cls <- input$msg_class
     student <- input$msg_student %||% "Butun sinif"; channel <- input$msg_channel
-    context <- input$msg_context; tone <- input$msg_tone
+    context <- input$msg_context; tone <- input$msg_tone; ln <- input$msg_lang
     MSG_LABELS <- c(parent_report="Valideyn hesabati",praise="Ugur mektubu",warning="Xeberdarliq",
       motivation="Motivasiya",olympiad_invite="Olimpiada daveti",homework_notice="Ev tapshirigi",
       meeting_invite="Toplanti daveti",class_report="Sinif raportu")
     label <- MSG_LABELS[mtype] %||% mtype
     run_ai_async(session, output, "msg_timer_live", "msg_token_ui", "msg_result",
       cls, label, "AI mesaj yaradir...",
-      function() build_msg_prompt(mtype, cls, student, channel, context, tone),
+      function() build_msg_prompt(mtype, cls, student, channel, context, tone, ln),
       function(text) save_result(text, HTML5_CSS, MSG_DIR, 0, paste0(cls, "_", label), "mesaj"),
       function() sprintf("ARTI 2026 | %s | %s", cls, label))
   })
