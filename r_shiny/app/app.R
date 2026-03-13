@@ -121,15 +121,17 @@ build_context <- function(gr, topic) {
 # ══════════════════════════════════════════════
 # CLAUDE API
 # ══════════════════════════════════════════════
-call_claude <- function(prompt) {
+call_claude <- function(prompt, max_tokens = NULL) {
   key <- Sys.getenv("ANTHROPIC_API_KEY", "")
   if (nchar(key) < 10) return(list(success = FALSE, error = "ANTHROPIC_API_KEY .env faylinda tapilmadi!",
                                     time_sec = 0, input_tokens = 0, output_tokens = 0))
   t0 <- proc.time()["elapsed"]
+  default_max <- if (grepl("haiku", CLAUDE_MODEL)) 4096L else 16384L
+  final_max <- if (!is.null(max_tokens)) as.integer(max_tokens) else default_max
   tryCatch({
     resp <- POST(CLAUDE_ENDPOINT,
       add_headers(`x-api-key` = key, `anthropic-version` = "2023-06-01", `content-type` = "application/json"),
-      body = toJSON(list(model = CLAUDE_MODEL, max_tokens = if (grepl("haiku", CLAUDE_MODEL)) 4096L else 16384L,
+      body = toJSON(list(model = CLAUDE_MODEL, max_tokens = final_max,
                          messages = list(list(role = "user", content = prompt))), auto_unbox = TRUE),
       encode = "raw", timeout(300))
     elapsed <- round(as.numeric(proc.time()["elapsed"] - t0), 1)
@@ -454,16 +456,156 @@ Sonda MUTLEQ bu analiz blokunu elave et:
 </div>')
 }
 
-build_lesson_prompt <- function(grade, topic, standard, context, duration, blooms, dok, langs = c("az")) {
+# ═══════════════ SINIF SEVIYYESI KONTEKST ═══════════════
+get_grade_context <- function(grade) {
+  if (grade >= 1 && grade <= 4) {
+    return("
+## SINIF SEVIYYESI KONTEKST: IBTIDAI (1-4)
+- STEAM inteqrasiyasi MECBURI ve genish olmalidir (minimum 7-10 deqiqe)
+- Sinqapur CPA modeli tam tetbiq olunmalidir (her uc merhele)
+- Oyun esasli oyrenme elementleri daxil edilmelidir (minimum 2 oyun/fealiyyet)
+- TIMSS 4-cu sinif cercivesine uygunluq
+- EGRA/EGMA uygunlugu gosterilmelidir
+- Fiziki hereket/kinestetik fealiyyetler daxil edilmelidir
+- Manipulyativler: sayqac cubuqlari, onluq bloklar, rengli fishler, tangram, pattern blocks, geoboard
+- Hekaye esasli meseleler Azerbaycan medeni kontekstinde
+- Finlandiya: mutleq 15 deqiqeden sonra qisa hereket fasilesi
+")
+  } else if (grade >= 5 && grade <= 7) {
+    return("
+## SINIF SEVIYYESI KONTEKST: ORTA (5-7)
+- STEAM inteqrasiyasi guclu tovsiye olunur (5-7 deqiqe)
+- CPA modelinin Pictorial ve Abstract merhelelerine vurqu
+- TIMSS 8-ci sinif cercivesine hazrliq
+- PISA riyazi savadliliq cercivesine girish
+- GeoGebra, Desmos kimi reqemsal aletler tovsiye olunur
+- Qrup layiheleri ve poster prezentasiyalari
+- Real statistik melumatlarla ish (Azerbaycan statistikasi)
+")
+  } else {
+    return("
+## SINIF SEVIYYESI KONTEKST: YUXARI (8-11)
+- PISA riyazi savadliliq tam cercivesi tetbiq olunur
+- TIMSS Advanced cercivesine uygunluq
+- Abstrakt dushunce ve isbat bacarqlari
+- Modelleshidirme ve real heyat tetbiqleri
+- GeoGebra, Desmos, Python/R ile data analizi
+- Estoniya: proqramlashdirma-riyaziyyat inteqrasiyasi
+- Tenqidi dushunce ve arqumentasiya bacarqlari
+")
+  }
+}
+
+get_steam_instruction <- function(grade, steam_level) {
+  if (steam_level == "none") return("")
+  if (grade <= 4) {
+    return("
+STEAM BOLMESI bu ders planinin en muhum hisselerinden biridir. Her STEAM komponenti (S, T, E, A, M) ucun konkret fealiyyet yaz.
+S — Elm: Tebiet hadisesi elaqesi, olcme tecrubesi
+T — Texnologiya: Reqemsal aletler, kodlashdirma (Scratch, code.org)
+E — Muhendislik: Tikin/Yarat/Dizayn et tipli fealiyyet
+A — Incesenet: Vizual senet, simmetriya, naxish
+M — Riyaziyyat: Fenlerarasi elaqe, real heyat tetbiqi
+")
+  } else if (grade <= 7) {
+    return(if (steam_level == "full") "STEAM: En azi S, T, E komponentlerinden ikisini etrafli yaz.\n" else "STEAM: En azi 2 komponent (T ve M) etrafli yaz.\n")
+  } else {
+    return("STEAM inteqrasiyasini real heyat konteksti ve peshe yonumu ile elaqelendir.\n")
+  }
+}
+
+get_max_tokens_for_detail <- function(plan_detail) {
+  switch(plan_detail, "detailed" = 16384L, "standard" = 8192L, "brief" = 4096L, 8192L)
+}
+
+build_lesson_prompt <- function(grade, topic, standard, context, duration, blooms, dok, langs = c("az"),
+                                intl_standards = c("timss","pisa"), intl_approaches = c("singapore","japan"),
+                                steam_level = "full", plan_detail = "detailed") {
   lang_inst <- build_lang_instruction(langs)
+  grade_ctx <- get_grade_context(grade)
+  steam_inst <- get_steam_instruction(grade, steam_level)
   m1 <- as.integer(duration * 0.10); m2 <- as.integer(duration * 0.30)
-  m3 <- as.integer(duration * 0.25); m4 <- as.integer(duration * 0.25); m5 <- as.integer(duration * 0.10)
+  m3 <- as.integer(duration * 0.25)
+  steam_time <- if (grade <= 6 && steam_level != "none") as.integer(duration * 0.12) else 0
+  m4_raw <- duration - m1 - m2 - m3 - steam_time
+  m4 <- as.integer(m4_raw * 0.65); m5 <- m4_raw - m4
+
+  detail_inst <- switch(plan_detail,
+    "detailed" = "HECM: Minimum 2500 soz. Etrafli metodiki vesait.",
+    "standard" = "HECM: Minimum 1500 soz.",
+    "brief" = "HECM: Minimum 800 soz.",
+    "HECM: Minimum 1500 soz.")
+
+  timss_section <- if ("timss" %in% intl_standards) '
+**TIMSS:**
+- Kontekt domenleri: Eded, Hendese, Melumat ve Ehtimal, Cebr
+- Koqnitiv domenler: Bilmek (Knowing), Tetbiq etmek (Applying), Muhakime yurutmek (Reasoning)
+- Bu movzu TIMSS-in hansi domen ve koqnitiv seviyyesine uygun gelir — KONKRET goster
+- Her tapshiriqda TIMSS koqnitiv domenini goster: [B] Bilmek, [T] Tetbiq, [M] Muhakime
+' else ""
+
+  pisa_section <- if ("pisa" %in% intl_standards) '
+**PISA:**
+- Riyazi savadliliq: Formulasiya, Tetbiq, Sherh/Qiymetlendirme
+- Kontekstler: Shexsi, Peshekar, Sosial, Elmi
+- Bacariq seviyyeleri (1-6)
+- Real heyat kontekstli PISA tipli tapshiriq numunesi ver
+' else ""
+
+  pirls_section <- if ("pirls" %in% intl_standards) '
+**PIRLS:** Riyazi metnlerin oxunmasi, terminologiyanin duzgun istifadesi
+' else ""
+
+  egra_section <- if ("egra" %in% intl_standards && grade <= 3) '
+**EGRA/EGMA:** Eded tanima, muqayise, sozlu hesablama sureti
+' else ""
+
+  singapore_section <- if ("singapore" %in% intl_approaches) '
+**Sinqapur CPA:**
+- KONKRET: Manipulyativler (sayqac cubuqlari, onluq bloklar, geoboard, tangram)
+- TESVIRI: Vizual modeller (eded xetti, bar modeli, cedvel, qrafik)
+- MUCERRED: Simvol ve formulaya kecid
+- Bar Model metodu ile mesele helli (eger uyqundursa)
+- Anchor Task yanashmasi
+' else ""
+
+  finland_section <- if ("finland" %in% intl_approaches) '
+**Finlandiya:**
+- Fenomen esasli oyrenme — real heyat fenomeni ile elaqe
+- Oyun esasli oyrenme (1-6-ci sinifler)
+- Muellim max 30% danishir, 70% shagird fealiyyeti
+' else ""
+
+  japan_section <- if ("japan" %in% intl_approaches) '
+**Yaponiya (Lesson Study):**
+- Hatsumon — dushundurcu aciq sual
+- Kikan-shido — muellimin sinif boyu gezerek musahidesi
+- Neriage — muxtelif hell yollarinin muzakiresi
+- Matome — dersin sonunda umumilshdirme
+- Bansho — lovhede planlashdirilmish yazi
+' else ""
+
+  korea_section <- if ("korea" %in% intl_approaches) '
+**Cenubi Koreya:** Texnologiya inteqrasiyasi, deliberate practice
+' else ""
+
+  estonia_section <- if ("estonia" %in% intl_approaches) '
+**Estoniya:** Reqemsal savadliliq, proqramlashdirma inteqrasiyasi
+' else ""
+
+  steam_phase <- if (steam_time > 0) paste0('
+MERHELE 3b: STEAM PRAKTIKASI (', steam_time, ' deq):
+  - Mini layihe, tecrube, ve ya yaradici fealiyyet
+  - S, T, E, A, M komponentlerinden uygun olanlari daxil et
+') else ""
+
   paste0(
-'Sen dunya tehsilinin aparici olkelerinin (Finlandiya, Sinqapur, Estoniya, Yaponiya) metodologiyalarina uygun ders planlari hazirlayan ekspert metodist AI-san.
+'Sen Azerbaycan Respublikasinin 1-11-ci sinif riyaziyyat muellimleri ucun peshkar ders plani yazan ekspert metodistdir.
 ', lang_inst, '
-═══════════════════════════════════════
+', grade_ctx, '
+', detail_inst, '
+
 PARAMETRLER:
-═══════════════════════════════════════
 SINIF: ', grade, '-ci sinif
 MOVZU: ', topic, '
 STANDART: ', standard, '
@@ -471,83 +613,44 @@ MUDDET: ', duration, ' deqiqe
 BLOOM: ', paste(blooms, collapse = ", "), '
 DOK: ', dok, '
 
-═══════════════════════════════════════
 DERSLIKDEN KONTEKST:
-═══════════════════════════════════════
 ', context, '
 
-═══════════════════════════════════════
-BEYNELXALQ METODOLOJI TELEBLER:
-═══════════════════════════════════════
+BEYNELXALQ UYGUNLUQ:
+', timss_section, pisa_section, pirls_section, egra_section, '
 
-1. SINQAPUR CPA MODELİ (Concrete-Pictorial-Abstract):
-   KONKRET merhele: Eshya, manipulyativ, real obyektlerle ish (pul, kibrit, kagiz qatlama)
-   TESVIRI merhele: Shekil, diaqram, eded oxu, model cekmek
-   MUCERRED merhele: Simvol, formula, cebri ifade, umumi qayda
+BEYNELXALQ YANAHMALAR:
+', singapore_section, finland_section, japan_section, korea_section, estonia_section, '
+', steam_inst, '
 
-2. FINLANDIYA MODELİ:
-   - Shagird merkezli, keshf esasli oyrenme
-   - Sehvler oyrenme imkanidir — sehvlere musbet munasibat
-   - Formativ qiymetlendirme: muellim musahide edir, yonlendirir
-   - Az ev tapshirigi, amma keyfiyyetli
-   - Qrup ishi ve muzakire: shagirdler bir-birine oyredir
+DERS PLANI STRUKTURU (10 BOLME):
 
-3. YAPONIYA "LESSON STUDY" MODELİ:
-   - Dersin mehveri: "Bu gun shagirdler ne oyrenecekhell edecek?"
-   - Numunevi meseleler: Muellim bir numune gosterir, shagirdler strateji mueyyen edir
-   - Musteqil tedqiqat: Shagirdler oz yollarini tapmaga calishir
-   - Neandoji (kiken): Muxtelf hell yollarini cedvelde muqayise etmek
+1. UMUMI MELUMAT — sinif, movzu, standart, kurikulumdaki yeri
+2. BEYNELXALQ UYGUNLUQ — TIMSS/PISA/PIRLS uygunlugu KONKRET
+3. OYRENME NETICELERI — SMART formatda, TIMSS koqnitiv domen elaqesi, Bloom seviyyesi
+4. DERS GEDISHI (', duration, ' deqiqe):
+   a) Motivasiya/Bashlangic (', m1, ' deq) — Hatsumon, real heyat situasiyasi
+   b) Yeni bilik keshfi (', m2, ' deq) — Sinqapur CPA ardicilligi, Bansho, en azi 5 sual, 3 tipik sehv
+   c) Praktika (', m3, ' deq) — Guided practice, 3 seviyyeli diferensiasiya [B]/[T]/[M]
+', steam_phase, '   d) Qiymetlendirme/Refleksiya (', m5, ' deq) — Exit ticket, trafik ishigi, Matome, ev tapshirigi
+5. QIYMETLENDIRME ALETLERI — formativ + summativ, TIMSS/PISA format
+6. RESURSLAR — eyani vasiteler, reqemsal aletler, valideyn elaqesi
+7. INKLYUZIV UYGUNLASHDIRMALAR
+8. MUELLIM QEYDLERI — 3+ misconception, alternativ strategiya
+9. STEAM INTEQRASIYASI — S, T, E, A, M komponentleri
+10. DERS ANALIZI — Bloom/DOK/TIMSS/PISA/CPA/STEAM metrikleri
 
-4. BLOOM TAKSONOMIYASI (Anderson-Krathwohl):
-   Her merhelede hansi Bloom seviyyesinin hedefe alindigini goster
+MUHUM TELIMATLAR:
+1. TIMSS, PISA uygunlugunu KONKRET goster
+2. En azi 3 olkenin yanashmasini inteqrasiya et
+3. Tapshiriqlari TAM yaz — sual, cavab, izah
+4. Diferensiasiya 3 seviyyede: esas [B], orta [T], yuksek [M]
+5. Azerbaycan medeni konteksti (Baki, manat, Novruz, Xezer)
+6. Minimum 3 tipik shagird sehvi (misconceptions)
+7. [B] Bilmek, [T] Tetbiq, [M] Muhakime etiketleri
+8. Lovhede yazilacaq qeydleri planla (Bansho)
 
-5. DOK SEVIYYELERİ:
-   Her tapshiriqda DOK seviyyesini qeyd et
-
-6. PISA/TIMSS INTEQRASIYA:
-   - Real heyat konteksti (PISA): Baki, manat, Xezer, metro, enerji, su, ekoloji
-   - Riyazi muhakime (TIMSS): Niye? Esaslandir. Baska yol goster. Ne olar eger?
-   - Fenn integrasiyasi: fizika, cografiya, iqtisadiyyat
-
-═══════════════════════════════════════
-DERS PLANININ STRUKTURU (5 MERHELE):
-═══════════════════════════════════════
-
-MERHELE 1: MOTIVASIYA VE AKTUALLASDIRMA (', m1, ' deq)
-  - Gundlik heyatdan problem situasiyasi (PISA tipi)
-  - Derslikden "Arasdirma" ve ya "Dusun" bolmesi
-  - Evvelki biliklerin aktivleshdirilmesi (2-3 sual)
-  - Dersin meqsedinin SHAGIRDLERLE birge mueyyen edilmesi
-
-MERHELE 2: YENI BILIK VE KESHF (', m2, ' deq) — SINQAPUR CPA
-  - KONKRET: Real obyektlerle nümayish (ne istifade olunur, nece gosterilir)
-  - TESVIRI: Shekil, diaqram, model — shagirdler deftere cekir
-  - MUCERRED: Formula/qayda cixarilmasi — shagirdler OZU keshf edir
-  - Muellim yonlendirici suallar verir, cavabi DEMHIR
-  - Derslikden numune: seh. XX, tapshiriq No.YY
-
-MERHELE 3: BIRGE TETBIQ (', m3, ' deq) — "MEN > BIZ > SEN"
-  - MEN: Muellim 1 numune hell edir (sesli dushunme — her addimi izah)
-  - BIZ: Cutluklerle 1-2 tapshiriq (derslikden seh. XX)
-  - SEN: Ferdi 1 tapshiriq (muellim gezir, yoxlayir)
-  - Sehvlerin analizi: 2-3 tipik sehvi levhede goster, muezakire et
-
-MERHELE 4: MUSTEQIL TETBIQ VE DIFERENSIASIYA (', m4, ' deq)
-  BAZA seviyye (DOK-1/2): Standart tapshiriqlar, addim-addim gosterish ile
-  ORTA seviyye (DOK-2/3): Kontekstli meseleler, oz strategiyasini secmeli
-  YUKSEK seviyye (DOK-3/4): PISA tipi aciq meseleler, esaslandirma teleb olunan, layihe elementli
-  - Her seviyyede en azi 2 tapshiriq
-  - Derslikden: Baza seh.XX No.YY | Orta seh.XX No.YY | Yuksek — muellim yaradir
-
-MERHELE 5: YEKUNLASDIRMA VE REFLEKSIYA (', m5, ' deq)
-  - Cixis bileti: 1 sual (bu gun ne oyrendim?)
-  - 3-2-1 refleksiya: 3 sey oyrendim, 2 sual var, 1 sey maraqli idi
-  - Ev tapshirigi: Derslikden seh. XX No.YY (5-10 deq hecminde, keyfiyyetli)
-  - Novbeti dersle elaqe: "Novbeti dersde bu biligi ... ucun istifade edeceyik"
-
-═══════════════════════════════════════
 HTML FORMATI (CIDDI RIAYAT):
-═══════════════════════════════════════
 Neticeni YALNIZ HTML teqleri ile ver. Markdown ISTIFADE ETME.
 
 <div class="lesson-header">
@@ -559,14 +662,15 @@ Neticeni YALNIZ HTML teqleri ile ver. Markdown ISTIFADE ETME.
     <div class="meta-item"><span class="label">Standart:</span> ', standard, '</div>
     <div class="meta-item"><span class="label">Bloom:</span> ', paste(blooms, collapse = ", "), '</div>
     <div class="meta-item"><span class="label">DOK:</span> ', dok, '</div>
-    <div class="meta-item"><span class="label">Model:</span> Sinqapur CPA + Finlandiya + PISA/TIMSS</div>
+    <div class="meta-item"><span class="label">Model:</span> Sinqapur CPA + Finlandiya + Yaponiya + TIMSS/PISA</div>
+    <div class="meta-item"><span class="label">STEAM:</span> ', if (steam_level!="none") "Aktiv" else "Deaktiv", '</div>
   </div>
   <div class="objectives">
     <h3>Telim Neticeleri (SMART formatda)</h3>
     <ul>
-      <li><strong>Bilik (Bloom 1-2):</strong> Shagird ... bilecek/izah ede bilecek</li>
-      <li><strong>Bacariq (Bloom 3-4):</strong> Shagird ... hesablaya/tehlil ede bilecek</li>
-      <li><strong>Tetbiq (Bloom 5-6):</strong> Shagird ... real heyatda tetbiq ede/yarada bilecek</li>
+      <li><strong>Bilik [B]:</strong> Shagird ... bilecek/izah ede bilecek</li>
+      <li><strong>Bacariq [T]:</strong> Shagird ... hesablaya/tehlil ede bilecek</li>
+      <li><strong>Tetbiq [M]:</strong> Shagird ... real heyatda tetbiq ede/yarada bilecek</li>
     </ul>
   </div>
 </div>
@@ -574,34 +678,34 @@ Neticeni YALNIZ HTML teqleri ile ver. Markdown ISTIFADE ETME.
 HER MERHELE bele olmalidir:
 <div class="phase phase-[N]">
   <div class="phase-header">
-    <span class="phase-icon">[uygun emoji]</span>
+    <span class="phase-icon">[emoji]</span>
     <h3>MERHELE [N]: [AD]</h3>
     <span class="phase-time">[X] deq</span>
   </div>
-  <div class="teacher-activity"><strong>Muellim fealiyyeti:</strong> [Deqiq ne deyir, ne gosterir, hansi suallari verir — KONKRET cumleler ile]</div>
-  <div class="student-activity"><strong>Shagird fealiyyeti:</strong> [Deqiq ne edir: yazir, hesablayir, muzakire edir, cutlukle ishleyir — KONKRET]</div>
-  <div class="textbook-ref"><strong>Derslik istinadi:</strong> seh. [XX], tapshiriq No.[YY] | Elave resurs: [varsa]</div>
-  <div class="assessment"><strong>Formativ qiymetlendirme:</strong> [Muellim NECE yoxlayir: musahide, sual-cavab, mini-test, bas barmagile isare]</div>
-  [Merhele 4 ucun elave:]
+  <div class="teacher-activity"><strong>Muellim:</strong> [KONKRET cumleler]</div>
+  <div class="student-activity"><strong>Shagird:</strong> [KONKRET fealiyyet]</div>
+  <div class="textbook-ref"><strong>Derslik:</strong> seh. [XX], No.[YY]</div>
+  <div class="assessment"><strong>Formativ:</strong> [musahide, sual-cavab, mini-test]</div>
   <div class="differentiation">
-    <div class="diff-level diff-base"><strong>BAZA (DOK-1/2):</strong> [2 konkret tapshiriq + derslik istinadi]</div>
-    <div class="diff-level diff-mid"><strong>ORTA (DOK-2/3):</strong> [2 konkret tapshiriq + kontekst]</div>
-    <div class="diff-level diff-high"><strong>YUKSEK (DOK-3/4):</strong> [2 PISA tipi aciq tapshiriq]</div>
+    <div class="diff-level diff-base"><strong>ESAS [B]:</strong> [3-4 tapshiriq]</div>
+    <div class="diff-level diff-mid"><strong>ORTA [T]:</strong> [2-3 tapshiriq]</div>
+    <div class="diff-level diff-high"><strong>YUKSEK [M]:</strong> [1-2 PISA tipi tapshiriq]</div>
   </div>
 </div>
 
-Sonda MUTLEQ bu analiz blokunu yaz:
+Sonda MUTLEQ analiz bloku:
 <div class="analysis-block">
-  <h3>Ders Analizi</h3>
-  <div class="stat-row"><strong>Bloom paylamasi:</strong> Xatirlama X% | Anlama X% | Tetbiqetme X% | Tehlil X% | Qiymetlendirme X% | Yaratma X%</div>
-  <div class="stat-row"><strong>Zaman bolgusu:</strong> Muellim X% | Shagird X% | Muzakire X% — Finlandiya standart: Muellim max 30%</div>
-  <div class="stat-row"><strong>CPA balans:</strong> Konkret X% | Tesviri X% | Mucerred X%</div>
-  <div class="stat-row"><strong>DOK paylamasi:</strong> DOK-1: X% | DOK-2: X% | DOK-3: X% | DOK-4: X%</div>
-  <div class="stat-row"><strong>PISA inteqrasiyasi:</strong> Real heyat konteksti: [hansi tapshiriqlar] | Muhakime: [hansi tapshiriqlar]</div>
-  <div class="stat-row"><strong>TIMSS uygunluqu:</strong> Bilik: X% | Tetbiq: X% | Muhakime: X%</div>
-  <div class="stat-row"><strong>Derslik istinadlari:</strong> seh. [butun istifade olunan sehifeler ve tapshiriq nomreleri]</div>
-  <div class="stat-row"><strong>Ev tapshirigi:</strong> Derslik seh. XX No.YY (texmini 10 deq)</div>
-  <div class="stat-row"><strong>Inklyuzivlik:</strong> [gorme/eshitme chetinliyi olan shagirdler ucun uygunlashdirma tovsiyyeleri]</div>
+  <h3>Ders Analizi ve Beynelxalq Uygunluq</h3>
+  <div class="stat-row"><strong>Bloom:</strong> Xatirlama X% | Anlama X% | Tetbiqetme X% | Tehlil X% | Qiymetlendirme X% | Yaratma X%</div>
+  <div class="stat-row"><strong>Zaman:</strong> Muellim X% | Shagird X% | Muzakire X%</div>
+  <div class="stat-row"><strong>CPA:</strong> Konkret X% | Tesviri X% | Mucerred X%</div>
+  <div class="stat-row"><strong>DOK:</strong> DOK-1 X% | DOK-2 X% | DOK-3 X% | DOK-4 X%</div>
+  <div class="stat-row"><strong>TIMSS:</strong> Domen: [X] | Bilmek X% | Tetbiq X% | Muhakime X%</div>
+  <div class="stat-row"><strong>PISA:</strong> Kontekst: [X] | Seviyye: [1-6]</div>
+  <div class="stat-row"><strong>STEAM:</strong> S:[+/-] T:[+/-] E:[+/-] A:[+/-] M:[+/-]</div>
+  <div class="stat-row"><strong>Misconceptions:</strong> [3+ tipik sehv]</div>
+  <div class="stat-row"><strong>Derslik:</strong> seh. [butun sehifeler]</div>
+  <div class="stat-row"><strong>Ev tapshirigi:</strong> diferensiyalashdirilmish</div>
 </div>')
 }
 
@@ -731,8 +835,20 @@ ui <- dashboardPage(skin = "blue",
           column(2, numericInput("lp_duration", "Muddet:", value = 45))),
         fluidRow(column(3, checkboxGroupInput("lp_bloom", "Bloom:", choices = c("Xatirlama","Anlama","Tetbiqetme","Tehlil","Qiymetlendirme","Yaratma"), selected = c("Anlama","Tetbiqetme","Tehlil"))),
           column(2, sliderInput("lp_dok", "DOK:", min = 1, max = 4, value = 2)),
-          column(3, checkboxGroupInput("lp_lang", "Dil:", choices = c("Azerbaycan"="az","Rus"="ru","Ingilis"="en"), selected = c("az","ru","en"), inline = TRUE)),
-          column(2, actionButton("lp_generate", "AI ile Yarat", class = "btn-primary btn-lg btn-generate", style = "margin-top:25px;"))),
+          column(3, checkboxGroupInput("lp_lang", "Dil:", choices = c("Azerbaycan"="az","Rus"="ru","Ingilis"="en"), selected = c("az","ru","en"), inline = TRUE))),
+        fluidRow(
+          column(3, checkboxGroupInput("lp_intl_standards", "Beynelxalq Standartlar:",
+            choices = c("TIMSS"="timss","PISA"="pisa","PIRLS"="pirls","EGRA/EGMA"="egra"),
+            selected = c("timss","pisa"), inline = TRUE)),
+          column(3, checkboxGroupInput("lp_intl_approaches", "Beynelxalq Yanahmalar:",
+            choices = c("Sinqapur CPA"="singapore","Finlandiya"="finland","Yaponiya"="japan","C.Koreya"="korea","Estoniya"="estonia"),
+            selected = c("singapore","japan"), inline = TRUE)),
+          column(3, radioButtons("lp_steam_level", "STEAM seviyyesi:",
+            choices = c("Tam"="full","Orta"="medium","Esas"="basic","Yox"="none"), selected = "full", inline = TRUE)),
+          column(3, radioButtons("lp_plan_detail", "Etraflilik:",
+            choices = c("Etrafli (2500+)"="detailed","Standart (1500+)"="standard","Qisa (800+)"="brief"),
+            selected = "detailed"))),
+        fluidRow(column(2, actionButton("lp_generate", "AI ile Yarat", class = "btn-primary btn-lg btn-generate", style = "margin-top:25px;"))),
         fluidRow(column(12, uiOutput("lp_token_ui"))),
         hr(), tags$div(id = "lp_timer_live"), uiOutput("lp_result")))),
       # === TEST ===
@@ -880,9 +996,12 @@ server <- function(input, output, session) {
     req(input$lp_grade, input$lp_topic, input$lp_standard)
     gr <- as.integer(input$lp_grade); tp <- input$lp_topic; st <- input$lp_standard
     dur <- input$lp_duration; bl <- input$lp_bloom; dk <- input$lp_dok; ln <- input$lp_lang
+    intl_st <- input$lp_intl_standards; intl_ap <- input$lp_intl_approaches
+    stm <- input$lp_steam_level %||% "full"; pdet <- input$lp_plan_detail %||% "detailed"
     run_ai_async(session, output, "lp_timer_live", "lp_token_ui", "lp_result",
       sprintf("Sinif: %d", gr), tp, "AI ile elaqe quruldu, ders plani yaradilir...",
-      function() { ctx <- build_context(gr, tp); build_lesson_prompt(gr, tp, st, ctx, dur, bl, dk, ln) },
+      function() { ctx <- build_context(gr, tp); build_lesson_prompt(gr, tp, st, ctx, dur, bl, dk, ln,
+                    intl_standards = intl_st, intl_approaches = intl_ap, steam_level = stm, plan_detail = pdet) },
       function(text) save_result(text, HTML5_CSS, DERS_DIR, gr, tp, "ders_plani"),
       function() sprintf("ARTI 2026 | Sinif %d | %s | %d deq", gr, tp, dur))
   })
