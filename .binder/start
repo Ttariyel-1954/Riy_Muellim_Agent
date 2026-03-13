@@ -1,0 +1,3 @@
+#!/bin/bash
+export PORT=${PORT:-8888}
+R -e "shiny::runApp('r_shiny/app/', host='0.0.0.0', port=as.integer(Sys.getenv('PORT')))"

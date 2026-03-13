@@ -1,0 +1,3 @@
+#!/bin/bash
+# Binder üçün Shiny app konfiqurasiyası
+echo "Shiny app hazırlanır..."

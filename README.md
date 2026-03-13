@@ -1,5 +1,7 @@
 # 📐 Riy_Muellim_Agent v3.1
 
+[![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/Ttariyel-1954/Riy_Muellim_Agent/master)
+
 **AI ilə Riyaziyyat Müəllim İdarə Paneli**
 
 ARTI 2026 © Tariyel Talibov (ARTI — Azərbaycan Respublikası Təhsil İnstitutu)
