@@ -19,6 +19,7 @@ venv/
 # === Secrets ===
 .env
 .Renviron
+r_shiny/app/.Renviron
 *.key
 *.pem
 
@@ -26,6 +27,7 @@ venv/
 *.bak
 *.bak_*
 *.backup_*
+*.backup
 *.old
 
 # === Temp ===
@@ -51,4 +53,15 @@ Ders_planlari/*.html
 Ders_planlari/*.docx
 Testler/*.html
 Testler/*.docx
-Mesajlar/
+Mesajlar/*.html
+Mesajlar/*.docx
+r_shiny/app/Ders_planlari/
+r_shiny/app/Testler/
+r_shiny/app/Mesajlar/
+
+# === Deploy ===
+rsconnect/
+
+# === IDE ===
+.idea/
+.vscode/
