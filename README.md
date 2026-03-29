@@ -1,90 +1,90 @@
-# Riy Muellim Agent v3.3
+# Riy Müəllim Agent v3.3
 
-**Azarbaycan Respublikasi 1-11-ci sinif riyaziyyat muallimllari ucun AI agent sistemi**
+**Azərbaycan Respublikası 1-11-ci sinif riyaziyyat müəllimləri üçün AI agent sistemi**
 
-ARTI 2026 — Azarbaycan Respublikasi Tahsil Institutu
-
----
-
-## Haqqinda
-
-Riy Muellim Agent — riyaziyyat muallimlarinin gundalik isini asanlasdiran, baynalxalq standartlara (TIMSS, PISA, PIRLS) uygun dars planlari, testlar, sagird analizlari va metodiki materiallar yaradan suni intellekt sistemidir.
-
-Sistem Claude AI (Anthropic) modeli uzarinda islayir va R Shiny interfeysi vasitasila muallimlara istifadaya hazir sanadlar taqdim edir.
-
-### Asas xususiyyatlar
-
-- 1-11-ci sinif ucun tam kurikulum dastayi (178 standart, 254 movzu)
-- 17 darslik PDF-dan cixarilmis 519 chunk bilik bazasi
-- TIMSS/PISA/PIRLS baynalxalq carcivalara uygunluq
-- Blum taksonomiyasi va Sinqapur CPA modeli inteqrasiyasi
-- HTML5 + DOCX formatinda fayl cixisi
-- 3 dilda interfeys: Azerbaycanca, Rusca, Ingilisca
-- Real vaxt generasiya statistikasi (token, xerc, vaxt)
+ARTI 2026 — Azərbaycan Respublikası Təhsil İnstitutu
 
 ---
 
-## Sistem Arxitekturasi
+## Haqqında
+
+Riy Müəllim Agent — riyaziyyat müəllimlərinin gündəlik işini asanlaşdıran, beynəlxalq standartlara (TIMSS, PISA, PIRLS) uyğun dərs planları, testlər, şagird analizləri və metodiki materiallar yaradan süni intellekt sistemidir.
+
+Sistem Claude AI (Anthropic) modeli üzərində işləyir və R Shiny interfeysi vasitəsilə müəllimlərə istifadəyə hazır sənədlər təqdim edir.
+
+### Əsas xüsusiyyətlər
+
+- 1-11-ci sinif üçün tam kurikulum dəstəyi (178 standart, 254 mövzu)
+- 17 dərslik PDF-dən çıxarılmış 519 chunk bilik bazası
+- TIMSS/PISA/PIRLS beynəlxalq çərçivələrə uyğunluq
+- Blum taksonomiyası və Sinqapur CPA modeli inteqrasiyası
+- HTML5 + DOCX formatında fayl çıxışı
+- 3 dildə interfeys: Azərbaycanca, Rusca, İngiliscə
+- Real vaxt generasiya statistikası (token, xərc, vaxt)
+
+---
+
+## Sistem Arxitekturası
 
 ```
 Riy_Muellim_Agent/
 ├── r_shiny/app/
-│   └── app.R                 # R Shiny interfeys (asas proqram)
+│   └── app.R                 # R Shiny interfeys (əsas proqram)
 ├── src/
 │   ├── server.js             # Node.js API server
 │   ├── core/
 │   │   └── ai_engine.js      # Claude + OpenAI multi-model engine
 │   ├── agents/
-│   │   ├── lesson_planning/  # Dars planlama agenti
-│   │   ├── assessment/       # Qiymatlandirma agenti
+│   │   ├── lesson_planning/  # Dərs planlama agenti
+│   │   ├── assessment/       # Qiymətləndirmə agenti
 │   │   ├── communication/    # Kommunikasiya agenti
-│   │   ├── student_progress/ # Sagird inkisafi agenti
-│   │   ├── pedagogical/      # Metodiki komak agenti
-│   │   └── digital_assistant/# Raqamsal assistant
+│   │   ├── student_progress/ # Şagird inkişafı agenti
+│   │   ├── pedagogical/      # Metodiki kömək agenti
+│   │   └── digital_assistant/# Rəqəmsal assistant
 │   ├── api/
-│   │   └── routes.js         # API endpoint-lari
+│   │   └── routes.js         # API endpoint-ları
 │   └── middleware/
 │       └── auth.js           # JWT autentifikasiya
 ├── database/
 │   ├── migrations/           # PostgreSQL schema
-│   └── seeds/                # Ilkin verilanlar
+│   └── seeds/                # İlkin verilənlər
 ├── derslikler/
-│   ├── pdf/                  # 17 darslik PDF (gitignore)
+│   ├── pdf/                  # 17 dərslik PDF (gitignore)
 │   ├── chunks/               # 519 chunk (JSON)
-│   ├── standards.json        # 178 kurikulum standarti
-│   └── topics.json           # Movzular
+│   ├── standards.json        # 178 kurikulum standartı
+│   └── topics.json           # Mövzular
 ├── config/
-│   └── database.js           # DB konfiqurasiyasi
+│   └── database.js           # DB konfiqurasiyası
 ├── scripts/
 │   ├── pdf_pipeline.py       # PDF → chunk pipeline
-│   ├── pdf_to_chunks.py      # PDF parcalama
-│   ├── search_chunks.py      # Chunk axtaris
-│   └── setup.sh              # Qurasdirma skripti
-├── Ders_planlari/            # Generasiya olunmus dars planlari
-├── Testler/                  # Generasiya olunmus testlar
-├── Mesajlar/                 # Generasiya olunmus mesajlar
-├── .env.example              # Konfiqurasiya numunasi
-├── package.json              # Node.js asililiqlar
+│   ├── pdf_to_chunks.py      # PDF parçalama
+│   ├── search_chunks.py      # Chunk axtarış
+│   └── setup.sh              # Quraşdırma skripti
+├── Ders_planlari/            # Generasiya olunmuş dərs planları
+├── Testler/                  # Generasiya olunmuş testlər
+├── Mesajlar/                 # Generasiya olunmuş mesajlar
+├── .env.example              # Konfiqurasiya nümunəsi
+├── package.json              # Node.js asılılıqlar
 ├── Dockerfile                # Docker image
 ├── docker-compose.yml        # Docker compose
-└── CLAUDE.md                 # AI agent talimati
+└── CLAUDE.md                 # AI agent təlimatı
 ```
 
 ---
 
-## Qurasdirma
+## Quraşdırma
 
-### Talablar
+### Tələblər
 
-| Komponent | Versiya | Maqsad |
+| Komponent | Versiya | Məqsəd |
 |-----------|---------|--------|
 | R | >= 4.3 | Shiny interfeys |
 | Node.js | >= 18 | API server |
-| PostgreSQL | >= 14 | Verilanlar bazasi (optional) |
-| Pandoc | >= 2.19 | DOCX generasiyasi |
-| Python | >= 3.9 | PDF pipeline (birdafalik) |
+| PostgreSQL | >= 14 | Verilənlər bazası (optional) |
+| Pandoc | >= 2.19 | DOCX generasiyası |
+| Python | >= 3.9 | PDF pipeline (birdəfəlik) |
 
-### R paketlari
+### R paketləri
 
 ```r
 install.packages(c(
@@ -93,23 +93,23 @@ install.packages(c(
 ))
 ```
 
-### Addim 1: Klonlama
+### Addım 1: Klonlama
 
 ```bash
 git clone https://github.com/Ttariyel-1954/Riy_Muellim_Agent.git
 cd Riy_Muellim_Agent
 ```
 
-### Addim 2: .env faylini yaradin
+### Addım 2: .env faylını yaradın
 
 ```bash
 cp .env.example .env
 ```
 
-`.env` faylini redakta edin:
+`.env` faylını redaktə edin:
 
 ```env
-# Mutlaq lazimdir:
+# Mütləq lazımdır:
 ANTHROPIC_API_KEY=sk-ant-api03-YOUR_KEY_HERE
 
 # Optional:
@@ -122,14 +122,14 @@ SHINY_PORT=4040
 DEFAULT_AI_MODEL=claude-sonnet-4-20250514
 ```
 
-### Addim 3: R Shiny interfeysi isa salin
+### Addım 3: R Shiny interfeysi işə salın
 
 ```bash
 cd r_shiny/app
 Rscript -e "shiny::runApp('.', port = 4040, host = '0.0.0.0')"
 ```
 
-Va ya:
+Və ya:
 
 ```bash
 npm run shiny
@@ -137,242 +137,242 @@ npm run shiny
 
 Brauzer: `http://localhost:4040`
 
-### Addim 4: Node.js API (optional)
+### Addım 4: Node.js API (optional)
 
 ```bash
 npm install
-npm run db:setup   # PostgreSQL lazimdir
+npm run db:setup   # PostgreSQL lazımdır
 npm start          # http://localhost:3000
 ```
 
 ---
 
-## Docker ila isa salma
+## Docker ilə işə salma
 
 ```bash
 docker-compose up -d
 ```
 
-Bu komanda ham Node.js API-ni (`localhost:3000`), ham PostgreSQL-i (`localhost:5432`), ham da R Shiny-ni isa salir.
+Bu komanda həm Node.js API-ni (`localhost:3000`), həm PostgreSQL-i (`localhost:5432`), həm də R Shiny-ni işə salır.
 
 ---
 
-## Istifada Talimati
+## İstifadə Təlimatı
 
-### Tab 1: Dars Plani Generasiyasi
+### Tab 1: Dərs Planı Generasiyası
 
-Muallim asagidaki parametrlari secir:
+Müəllim aşağıdakı parametrləri seçir:
 
-| Parametr | Secim |
+| Parametr | Seçim |
 |----------|-------|
 | Sinif | 1-11 |
-| Movzu | Kurikulumdan secim va ya azad daxiletma |
-| Standart | Avtomatik yuklanir (178 standart) |
-| Dars tipi | Yeni movzu / Mohkamlandirma / Qiymatlandirma |
-| Baynalxalq carciva | TIMSS / PISA / PIRLS / Blum / CPA |
-| Diferensial talim | 3 saviyya (zaif/orta/guclu) |
+| Mövzu | Kurikulumdan seçim və ya azad daxiletmə |
+| Standart | Avtomatik yüklənir (178 standart) |
+| Dərs tipi | Yeni mövzu / Möhkəmləndirmə / Qiymətləndirmə |
+| Beynəlxalq çərçivə | TIMSS / PISA / PIRLS / Blum / CPA |
+| Diferensial təlim | 3 səviyyə (zəif/orta/güclü) |
 
-**Cixis:** HTML5 + DOCX fayl — darhal cap ucun hazir, 2500+ soz atrafly dars plani.
+**Çıxış:** HTML5 + DOCX fayl — dərhal çap üçün hazır, 2500+ söz ətraflı dərs planı.
 
-**Dars planinin strukturu:**
+**Dərs planının strukturu:**
 
-1. Umumi malumat (sinif, movzu, standart, tarix)
-2. Talim naticalar — Blum taksonomiyasina gora olculabilan feillar
-3. Baynalxalq standart uygunlugu (TIMSS domen/koqnitiv, PISA prosesi/konteksti)
-4. Sinqapur CPA (Concrete → Pictorial → Abstract) ardicilligi
-5. Yaponiya Lesson Study elementlari (Hatsumon, Kikan-shido, Neriage, Matome)
-6. Daqiqalik dars gedisi (45 daqiqa, 5 marhala)
-7. Diferensial tapsiriqlar (3 saviyya, har birinin TIMSS koqnitiv domeni)
-8. STEAM inteqrasiyasi (Science, Technology, Engineering, Arts, Mathematics)
-9. Formativ qiymatlandirma alatlar
-10. Ev tapsirigi (diferensiyalasdirilmis)
+1. Ümumi məlumat (sinif, mövzu, standart, tarix)
+2. Təlim nəticələri — Blum taksonomiyasına görə ölçülə bilən feillər
+3. Beynəlxalq standart uyğunluğu (TIMSS domen/koqnitiv, PISA prosesi/konteksti)
+4. Sinqapur CPA (Concrete → Pictorial → Abstract) ardıcıllığı
+5. Yaponiya Lesson Study elementləri (Hatsumon, Kikan-shido, Neriage, Matome)
+6. Dəqiqəlik dərs gedişi (45 dəqiqə, 5 mərhələ)
+7. Diferensial tapşırıqlar (3 səviyyə, hər birinin TIMSS koqnitiv doməni)
+8. STEAM inteqrasiyası (Science, Technology, Engineering, Arts, Mathematics)
+9. Formativ qiymətləndirmə alətləri
+10. Ev tapşırığı (diferensiyalaşdırılmış)
 
-### Tab 2: Test Generasiyasi
+### Tab 2: Test Generasiyası
 
-TIMSS/PISA formatinda testlar yaradir:
+TIMSS/PISA formatında testlər yaradır:
 
-- Cocsecimli suallar (Blum saviyyalari ila)
-- Qisa cavabli suallar
-- Aciq suallar (rubrika ila)
-- Hall yolu + izah + darslik istinad
+- Çoxseçimli suallar (Blum səviyyələri ilə)
+- Qısa cavablı suallar
+- Açıq suallar (rubrika ilə)
+- Həll yolu + izah + dərslik istinad
 - Distraktor analizi
 
-**Catinlik saviyyalari:** Asan → Orta → Catin → Qarisiq
+**Çətinlik səviyyələri:** Asan → Orta → Çətin → Qarışıq
 
-### Tab 3: Ayliq Plan
+### Tab 3: Aylıq Plan
 
-Butov ay ucun haftalik cadval:
-- Har hafta: movzu + standart + saat bolgusu
-- PISA/PIRLS uygunluq gostaricisi
-- Formativ/summativ qiymatlandirma noqtalari
-- Dars tipi variantlari
+Bütöv ay üçün həftəlik cədvəl:
+- Hər həftə: mövzu + standart + saat bölgüsü
+- PISA/PIRLS uyğunluq göstəricisi
+- Formativ/summativ qiymətləndirmə nöqtələri
+- Dərs tipi variantları
 
 ### Tab 4: Kommunikasiya
 
-Muallim ucun hazir sanadlar:
-- Valideyn maktubu
-- Idari hesabat
-- Pedaqoji sura cixisi
-- Sagird xasiyyatnamasi
+Müəllim üçün hazır sənədlər:
+- Valideyn məktubu
+- İdari hesabat
+- Pedaqoji şura çıxışı
+- Şagird xasiyyətnaməsi
 
-### Tab 5: Sagird Analizi
+### Tab 5: Şagird Analizi
 
-Fardi sagird profili yaradir:
-- Guclu/zaif taraflari
+Fərdi şagird profili yaradır:
+- Güclü/zəif tərəfləri
 - TIMSS koqnitiv domen profili
-- Fardilasdiriilmis tovsiyalar
-- Valideyn ucun taklif maktubu
+- Fərdiləşdirilmiş tövsiyələr
+- Valideyn üçün təklif məktubu
 
 ### Tab 6: Standartlar
 
-Butun kurikulum standartlarini cadval saklinda gostarir:
-- 178 asas standart
-- Sinifa gora filtrasiya
-- Sahaya gora qruplasdirma (adad, handasa, cabr, statistika)
+Bütün kurikulum standartlarını cədvəl şəklində göstərir:
+- 178 əsas standart
+- Sinifə görə filtrasiya
+- Sahəyə görə qruplaşdırma (ədəd, həndəsə, cəbr, statistika)
 
 ### Tab 7: Statistika
 
-Generasiya statistikasi:
-- Vaxt, token sayi, taxmini xerc
-- Arxiv cadvali (kecmis planlar/testlar)
-- HTML va DOCX yuklama duymasi
+Generasiya statistikası:
+- Vaxt, token sayı, təxmini xərc
+- Arxiv cədvəli (keçmiş planlar/testlər)
+- HTML və DOCX yükləmə düyməsi
 
 ---
 
-## Bilik Bazasi
+## Bilik Bazası
 
-### Darslik Chunk-lari
+### Dərslik Chunk-ları
 
-17 riyaziyyat darsliyi (1-11-ci sinif, I va II hissa) PDF formatindan parcalanib JSON chunk-larina cevrilib:
+17 riyaziyyat dərsliyi (1-11-ci sinif, I və II hissə) PDF formatından parçalanıb JSON chunk-larına çevrilib:
 
-| Sinif | Darslik | Chunk sayi |
+| Sinif | Dərslik | Chunk sayı |
 |-------|---------|------------|
-| 1 | I hissa + II hissa | ~50 |
-| 2 | I hissa + II hissa | ~50 |
-| 3 | I hissa + II hissa | ~50 |
-| 4 | I hissa + II hissa | ~50 |
-| 5 | I hissa + II hissa | ~50 |
-| 6 | I hissa + II hissa | ~50 |
+| 1 | I hissə + II hissə | ~50 |
+| 2 | I hissə + II hissə | ~50 |
+| 3 | I hissə + II hissə | ~50 |
+| 4 | I hissə + II hissə | ~50 |
+| 5 | I hissə + II hissə | ~50 |
+| 6 | I hissə + II hissə | ~50 |
 | 7 | Tam | ~40 |
 | 8 | Tam | ~40 |
 | 9 | Tam | ~40 |
 | 10 | Tam | ~35 |
 | 11 | Tam | ~35 |
-| **Cami** | **17 PDF** | **519 chunk** |
+| **Cəmi** | **17 PDF** | **519 chunk** |
 
-Har chunk tarkibi: sinif, hissa, movzu, saha, matn, sahifa araligi, soz sayi.
+Hər chunk tərkibi: sinif, hissə, mövzu, sahə, mətn, səhifə aralığı, söz sayı.
 
-### Kurikulum Standartlari
+### Kurikulum Standartları
 
-178 standart 5 saha uzra:
+178 standart 5 sahə üzrə:
 
-| Saha | Izah |
+| Sahə | İzah |
 |------|------|
-| Adadlar va amaliyyatlar | Natural adadlar, kasrlar, onluq kasrlar, rasional adadlar |
-| Cabr va funksiyalar | Dayisanlar, tanliklar, barabarsizliklar, funksiyalar |
-| Handasa | Fiqurlar, olcular, koordinat, cevirma |
-| Olcma | Uzunluq, saha, hacm, kutla, vaxt |
-| Statistika va ehtimal | Malumat toplama, diaqram, orta, ehtimal |
+| Ədədlər və əməliyyatlar | Natural ədədlər, kəsrlər, onluq kəsrlər, rasional ədədlər |
+| Cəbr və funksiyalar | Dəyişənlər, tənliklər, bərabərsizliklər, funksiyalar |
+| Həndəsə | Fiqurlar, ölçülər, koordinat, çevirmələr |
+| Ölçmə | Uzunluq, sahə, həcm, kütlə, vaxt |
+| Statistika və ehtimal | Məlumat toplama, diaqram, orta, ehtimal |
 
 ---
 
-## Baynalxalq Standartlar
+## Beynəlxalq Standartlar
 
-### TIMSS Inteqrasiyasi
+### TIMSS İnteqrasiyası
 
-**Kontekt domenlar:** Adad, Cabr, Handasa, Malumat va Ehtimal
+**Kontekt domenlər:** Ədəd, Cəbr, Həndəsə, Məlumat və Ehtimal
 
-**Koqnitiv domenlar:**
-- **[B] Bilmak (Knowing):** Faktlar, prosedurlar, anlayislar
-- **[T] Tatbiq etmak (Applying):** Standart masala halli
-- **[M] Muhakima yurutmak (Reasoning):** Qeyri-standart, coxaddimli masalalar
+**Koqnitiv domenlər:**
+- **[B] Bilmək (Knowing):** Faktlar, prosedurlar, anlayışlar
+- **[T] Tətbiq etmək (Applying):** Standart məsələ həlli
+- **[M] Mühakimə yürütmək (Reasoning):** Qeyri-standart, çoxaddımlı məsələlər
 
-Har tapsiriq [B], [T], [M] etiketi ila isaralanir.
+Hər tapşırıq [B], [T], [M] etiketi ilə işarələnir.
 
-### PISA Inteqrasiyasi
+### PISA İnteqrasiyası
 
-**Proseslar:** Formulasiya → Tatbiq → Sarh/Qiymatlandirma
+**Proseslər:** Formulasiya → Tətbiq → Şərh/Qiymətləndirmə
 
-**Kontekstlar:** Saxsi, Pasekar, Sosial, Elmi
+**Kontekstlər:** Şəxsi, Peşəkar, Sosial, Elmi
 
-**Bacariq saviyyalari:** 1-6 (har test sualinda gostarilir)
+**Bacarıq səviyyələri:** 1-6 (hər test sualında göstərilir)
 
 ### Sinqapur CPA Modeli
 
-Har dars planinda 3 marhala:
-1. **Concrete (Asyavi):** Manipulyativlar — saygac cubuqlari, onluq bloklar, tangram
-2. **Pictorial (Tasviri):** Vizual modellar — adad xatti, bar modeli, diaqram
-3. **Abstract (Mucarrad):** Riyazi simvol va formulalar
+Hər dərs planında 3 mərhələ:
+1. **Concrete (Əşyavi):** Manipulyativlər — sayğac çubuqları, onluq bloklar, tangram
+2. **Pictorial (Təsviri):** Vizual modellər — ədəd xətti, bar modeli, diaqram
+3. **Abstract (Mücərrəd):** Riyazi simvol və formulalar
 
 ### Yaponiya Lesson Study
 
-- **Hatsumon:** Darsin avvalinda dusundrucu sual
-- **Kikan-shido:** Fardi musahida, sinif boyu gazarak
-- **Neriage:** Muxtalif hall yollarinin muzakirasi
-- **Matome:** Darsin sonunda umulasdirma
-- **Bansho:** Lovhada planlasdirilmis yazi
+- **Hatsumon:** Dərsin əvvəlində düşündürücü sual
+- **Kikan-shido:** Fərdi müşahidə, sinif boyu gəzərək
+- **Neriage:** Müxtəlif həll yollarının müzakirəsi
+- **Matome:** Dərsin sonunda ümumiləşdirmə
+- **Bansho:** Lövhədə planlaşdırılmış yazı
 
 ---
 
-## API Endpoint-lari
+## API Endpoint-ları
 
-Node.js API (optional, R Shiny mustaqil islayir):
+Node.js API (optional, R Shiny müstəqil işləyir):
 
-| Metod | Endpoint | Funksiyasi |
+| Metod | Endpoint | Funksiyası |
 |-------|----------|-----------|
-| GET | `/api/v1/health` | Saglamliq yoxlamasi |
-| POST | `/api/v1/ders-plani` | Dars plani generasiyasi |
-| POST | `/api/v1/test-yarat` | Test generasiyasi |
-| POST | `/api/v1/aylik-plan` | Ayliq plan |
-| POST | `/api/v1/mesaj-yaz` | Mesaj generasiyasi |
-| POST | `/api/v1/shagird-analiz` | Sagird analizi |
-| GET | `/api/v1/arxiv/ders-planlari` | Kecmis planlar |
-| GET | `/api/v1/arxiv/testler` | Kecmis testlar |
+| GET | `/api/v1/health` | Sağlamlıq yoxlaması |
+| POST | `/api/v1/ders-plani` | Dərs planı generasiyası |
+| POST | `/api/v1/test-yarat` | Test generasiyası |
+| POST | `/api/v1/aylik-plan` | Aylıq plan |
+| POST | `/api/v1/mesaj-yaz` | Mesaj generasiyası |
+| POST | `/api/v1/shagird-analiz` | Şagird analizi |
+| GET | `/api/v1/arxiv/ders-planlari` | Keçmiş planlar |
+| GET | `/api/v1/arxiv/testler` | Keçmiş testlər |
 
 ---
 
-## Verilanlar Bazasi (PostgreSQL)
+## Verilənlər Bazası (PostgreSQL)
 
-### Asas cadvallar
+### Əsas cədvəllər
 
-| Cadval | Maqsad | Sutun sayi |
+| Cədvəl | Məqsəd | Sütun sayı |
 |--------|--------|------------|
-| `riy_standartlari` | Kurikulum standartlari | 11 |
-| `riy_movzular` | 254 movzu | 7 |
+| `riy_standartlari` | Kurikulum standartları | 11 |
+| `riy_movzular` | 254 mövzu | 7 |
 | `riy_derslikler` | 519 chunk | 10 |
-| `ders_planlari` | Generasiya olunmus planlar | 10 |
-| `testler` | Generasiya olunmus testlar | 10 |
+| `ders_planlari` | Generasiya olunmuş planlar | 10 |
+| `testler` | Generasiya olunmuş testlər | 10 |
 | `mesajlar` | Mesajlar | 5 |
-| `timss_framework` | TIMSS carcivasi | 8 |
-| `pisa_framework` | PISA carcivasi | 7 |
-| `steam_activities` | STEAM faaliyyatlar kitabxanasi | 10 |
-| `international_practices` | Baynalxalq yaxsi tacruubalar | 9 |
+| `timss_framework` | TIMSS çərçivəsi | 8 |
+| `pisa_framework` | PISA çərçivəsi | 7 |
+| `steam_activities` | STEAM fəaliyyətlər kitabxanası | 10 |
+| `international_practices` | Beynəlxalq yaxşı təcrübələr | 9 |
 
 ### Migration
 
 ```bash
-npm run db:migrate   # Schema yaradir
-npm run db:seed      # Ilkin malumatlari daxil edir
+npm run db:migrate   # Schema yaradır
+npm run db:seed      # İlkin məlumatları daxil edir
 ```
 
 ---
 
-## Fayl Cixisi
+## Fayl Çıxışı
 
-Har generasiya naticasi 2 formatda saxlanir:
+Hər generasiya nəticəsi 2 formatda saxlanır:
 
 ### HTML5
 - Responsive dizayn, mobil uyumlu
-- Gradient basliqlar, rangli fazalar
-- Cap ucun optimizasiya olunmus (`@media print`)
-- Interaktiv hover effektlari
+- Gradient başlıqlar, rəngli fazalar
+- Çap üçün optimizasiya olunmuş (`@media print`)
+- İnteraktiv hover effektləri
 
 ### DOCX (Word)
-- Pandoc vasitasila avtomatik cevrilir
-- Azerbaycan alifbasi dastayi (UTF-8)
+- Pandoc vasitəsilə avtomatik çevrilir
+- Azərbaycan əlifbası dəstəyi (UTF-8)
 - ARTI 2026 altbilgi
 
-### Fayl adlandirma
+### Fayl adlandırma
 
 ```
 sinif{N}_{movzu_slug}_{tip}_{timestamp}.html
@@ -385,20 +385,20 @@ Misal: `sinif7_Nisb_t__m_t_nasiblik_ders_plani_20260303_093906.html`
 
 ## Konfiqurasiya
 
-### AI Model Secimi
+### AI Model Seçimi
 
-`.env` faylinda:
+`.env` faylında:
 
 ```env
 DEFAULT_AI_MODEL=claude-sonnet-4-20250514
 ```
 
-Dastaklanan modellar:
+Dəstəklənən modellər:
 - `claude-sonnet-4-20250514` (default, optimal balans)
-- `claude-haiku-4-5-20251001` (suratli, ucuz)
+- `claude-haiku-4-5-20251001` (sürətli, ucuz)
 - `gpt-4o` (OpenAI alternativi)
 
-### Token Limitlari
+### Token Limitləri
 
 | Model | Default max_tokens |
 |-------|--------------------|
@@ -408,28 +408,28 @@ Dastaklanan modellar:
 
 ---
 
-## Inkisaf
+## İnkişaf
 
-### Lokal inkisaf
+### Lokal inkişaf
 
 ```bash
 # R Shiny (live reload)
 cd r_shiny/app
 Rscript -e "shiny::runApp('.', port = 4040)"
 
-# Node.js (nodemon ila)
+# Node.js (nodemon ilə)
 npm run dev
 
-# PDF pipeline (birdafalik)
+# PDF pipeline (birdəfəlik)
 python3 scripts/pdf_pipeline.py
 ```
 
-### Layiha strukturuna yeni agent alava etmak
+### Layihə strukturuna yeni agent əlavə etmək
 
-1. `src/agents/` altinda yeni qovluq yaradin
-2. `index.js` faylinda agent sinifini yaradin
-3. `src/api/routes.js`-a endpoint alava edin
-4. `r_shiny/app/app.R`-a yeni tab alava edin
+1. `src/agents/` altında yeni qovluq yaradın
+2. `index.js` faylında agent sinifini yaradın
+3. `src/api/routes.js`-ə endpoint əlavə edin
+4. `r_shiny/app/app.R`-ə yeni tab əlavə edin
 
 ---
 
@@ -442,9 +442,9 @@ python3 scripts/pdf_pipeline.py
 | Backend | Node.js + Express | 18+ |
 | Database | PostgreSQL | 14+ |
 | Vizualizasiya | Plotly.js | 2.x |
-| Sanad generasiyasi | Pandoc (HTML → DOCX) | 2.19+ |
+| Sənəd generasiyası | Pandoc (HTML → DOCX) | 2.19+ |
 | PDF pipeline | Python (PyPDF2, tiktoken) | 3.9+ |
-| Konteynerlasdirma | Docker + Docker Compose | 24+ |
+| Konteynerləşdirmə | Docker + Docker Compose | 24+ |
 
 ---
 
@@ -454,8 +454,8 @@ MIT License — ARTI 2026, Tariyel Talibov
 
 ---
 
-## Alaqe
+## Əlaqə
 
-- **Muallif:** Tariyel Talibov
-- **Taskilat:** ARTI — Azerbaycan Respublikasi Tahsil Institutu
+- **Müəllif:** Tariyel Talibov
+- **Təşkilat:** ARTI — Azərbaycan Respublikası Təhsil İnstitutu
 - **GitHub:** [Ttariyel-1954/Riy_Muellim_Agent](https://github.com/Ttariyel-1954/Riy_Muellim_Agent)
