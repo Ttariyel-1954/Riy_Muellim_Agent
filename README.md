@@ -1,461 +1,409 @@
-# Riy Müəllim Agent v3.3
+# Riyaziyyat Müəllim Agenti (Riy_Muellim_Agent)
 
-**Azərbaycan Respublikası 1-11-ci sinif riyaziyyat müəllimləri üçün AI agent sistemi**
+[![R](https://img.shields.io/badge/R-4.2+-blue.svg)](https://www.r-project.org/)
+[![PostgreSQL](https://img.shields.io/badge/PostgreSQL-14+-336791.svg)](https://www.postgresql.org/)
+[![Claude](https://img.shields.io/badge/AI-Claude%20Sonnet%204-purple.svg)](https://www.anthropic.com/)
+[![Shiny](https://img.shields.io/badge/R%20Shiny-Dashboard-149eca.svg)](https://shiny.rstudio.com/)
 
-ARTI 2026 — Azərbaycan Respublikası Təhsil İnstitutu
-
----
-
-## Haqqında
-
-Riy Müəllim Agent — riyaziyyat müəllimlərinin gündəlik işini asanlaşdıran, beynəlxalq standartlara (TIMSS, PISA, PIRLS) uyğun dərs planları, testlər, şagird analizləri və metodiki materiallar yaradan süni intellekt sistemidir.
-
-Sistem Claude AI (Anthropic) modeli üzərində işləyir və R Shiny interfeysi vasitəsilə müəllimlərə istifadəyə hazır sənədlər təqdim edir.
-
-### Əsas xüsusiyyətlər
-
-- 1-11-ci sinif üçün tam kurikulum dəstəyi (178 standart, 254 mövzu)
-- 17 dərslik PDF-dən çıxarılmış 519 chunk bilik bazası
-- TIMSS/PISA/PIRLS beynəlxalq çərçivələrə uyğunluq
-- Blum taksonomiyası və Sinqapur CPA modeli inteqrasiyası
-- HTML5 + DOCX formatında fayl çıxışı
-- 3 dildə interfeys: Azərbaycanca, Rusca, İngiliscə
-- Real vaxt generasiya statistikası (token, xərc, vaxt)
+**Azərbaycan Respublikasında 1-11-ci siniflər üzrə Riyaziyyat müəllimlərinə dəstək verən, Claude AI əsasında işləyən R Shiny dashboard-u. Müəllimlər üçün dərs planı, test, məsələlər və STEAM fəaliyyətlərini TIMSS, PISA, NCTM standartlarına uyğun avtomatik generasiya edir.**
 
 ---
 
-## Sistem Arxitekturası
+## Mündəricat
+
+- [Layihənin Məqsədi](#layihənin-məqsədi)
+- [Əsas Xüsusiyyətlər](#əsas-xüsusiyyətlər)
+- [Dashboard Bölmələri](#dashboard-bölmələri)
+- [Beynəlxalq Çərçəvələr](#beynəlxalq-çərçəvələr)
+- [STEAM Yanaşması](#steam-yanaşması)
+- [Texniki Stek](#texniki-stek)
+- [Layihə Strukturu](#layihə-strukturu)
+- [Verilənlər Bazası](#verilənlər-bazası)
+- [Quraşdırma](#quraşdırma)
+- [İstifadə Qaydası](#i̇stifadə-qaydası)
+- [Konfiqurasiya](#konfiqurasiya)
+- [Təhlükəsizlik](#təhlükəsizlik)
+- [Layihə Rəhbəri](#layihə-rəhbəri)
+
+---
+
+## Layihənin Məqsədi
+
+Riyaziyyat müəllimlərinin gündəlik pedaqoji fəaliyyətini avtomatlaşdırmaq və dünya standartlarına uyğun tədris materialları yaratmaq. Əsas məqsədlər:
+
+- **Dərs planlarının avtomatik generasiyası** — 1-11-ci siniflər üçün TIMSS, PISA, NCTM çərçivələrinə uyğun dərs planları
+- **Test və məsələ generasiyası** — Bloom taksonomiyasına əsaslanan çoxsəviyyəli testlər
+- **STEAM fəaliyyətlər** — aşağı siniflərdə riyaziyyatın elmi, texnoloji, mühəndislik, incəsənət sahələri ilə inteqrasiyası
+- **Beynəlxalq tələblərə uyğunluq** — Sinqapur, Finlandiya, Yaponiya, Kanada, Cənubi Koreya, Estoniya təcrübəsindən istifadə
+- **Dərsliklərdən kontekst çıxarma** — PDF dərsliklərdən RAG vasitəsilə məlumat istifadəsi
+
+---
+
+## Əsas Xüsusiyyətlər
+
+### 🤖 Süni İntellekt Əsaslı Generasiya
+- Claude Sonnet 4 modelindən istifadə
+- Azərbaycan riyaziyyat standartlarına tam uyğunluq
+- TIMSS, PISA, NCTM çərçivələri ilə tənzimləmə
+
+### 📚 Dərs Planı Generatoru
+- Sinif, mövzu və standart əsaslı avtomatik dərs planları
+- 10 bölməli genişləndirilmiş struktur:
+  1. Beynəlxalq uyğunluq
+  2. STEAM inteqrasiyası (1-6 siniflər üçün məcburi)
+  3. Dəqiqəlik dərs gedişi
+  4. Differensiasiya (zəif/güclü şagirdlər üçün)
+  5. Qiymətləndirmə alətləri
+  6. İnklüziv uyğunlaşdırmalar
+  7. Koqnitiv domen etiketləri (Bilmə / Tətbiq / Mühakimə)
+  8. Resurslar və materiallar
+  9. Ev tapşırığı
+  10. Refleksiya
+
+### ✍️ Test və Məsələ Generatoru
+- Çoxvariantlı, qısa cavab, problem həlli məsələləri
+- Bloom taksonomiyası 6 səviyyəsi üzrə
+- TIMSS koqnitiv domen etiketləri
+- PISA kontekst tipləri (real həyat, elm, peşə, şəxsi)
+- Avtomatik qiymətləndirmə rubrikası
+
+### 💬 Müəllim Yazışmaları
+- Valideyn bildirişləri
+- Şagird motivasiya mesajları
+- Rəsmi yazışmalar
+- Hadisə təsvirləri
+
+### 🔬 STEAM Fəaliyyət Kitabxanası
+- Həndəsi Fiqur Şəhəri (1-2 sinif)
+- Kəsr Pizza Mətbəxi (3-4 sinif)
+- Körpü Mühəndisliyi (5-6 sinif)
+- və s.
+
+### 🎨 Çıxışlar
+- HTML (nəfis rəngli)
+- DOCX (Word sənəd)
+- Plotly ilə interaktiv qrafiklər
+
+---
+
+## Dashboard Bölmələri
+
+| Bölmə | Funksiyası |
+|-------|------------|
+| **Ana Səhifə** | Ümumi statistika, qısa rəhbər |
+| **Dərs Planı** | Sinif, standart, mövzu → AI dərs planı |
+| **Testlər** | Standartlara əsaslanan test generasiyası |
+| **Məsələlər** | Bloom səviyyəsinə görə məsələ generasiyası |
+| **Mesajlar** | Hazır mesaj şablonları + AI generasiya |
+| **STEAM** | Fəaliyyətlər kitabxanası və generasiya |
+| **Standartlar** | 178 riyaziyyat standartının interaktiv baxışı |
+| **Dərsliklər** | PDF dərsliklərdən kontekst axtarışı (RAG) |
+| **Konfiqurasiya** | API key, model seçimi, dil parametrləri |
+
+---
+
+## Beynəlxalq Çərçəvələr
+
+### TIMSS — Trends in International Mathematics and Science Study
+
+**Koqnitiv sahələr:**
+- **Bilmə (Knowing)** — faktlar, prosedurlar, anlayışlar
+- **Tətbiq etmə (Applying)** — riyazi alətlərin istifadəsi
+- **Mühakimə yürütmə (Reasoning)** — məntiqi düşüncə
+
+**Məzmun sahələri:** Ədədlər, Cəbr, Həndəsə, Verilənlər və Ehtimal
+
+### PISA — Riyazi Savadlılıq
+
+**Proses kateqoriyaları:**
+- **Formulə etmə** — real situasiyaları riyaziləşdirmək
+- **Tətbiq etmə** — riyazi anlayışları istifadə etmək
+- **İnterpretasiya** — nəticələri kontekstə uyğun şərh etmək
+- **Mühakimə yürütmə** — məntiqi arqumentləşdirmə
+
+**PISA 2025 yenilikləri:** hesablama düşüncəsi, modelləşdirmə, riyazi ünsiyyət
+
+### NCTM — ABŞ Riyaziyyat Standartları
+
+**5 proses standartı:**
+1. Problemin həlli
+2. Mühakimə yürütmə və sübut
+3. Ünsiyyət
+4. Əlaqələr
+5. Təqdimat
+
+### Bloom Taksonomiyası
+
+1. **Xatırlama** — düsturları, qaydaları yadda saxlama
+2. **Anlama** — riyazi anlayışların mahiyyətini dərk etmə
+3. **Tətbiq etmə** — tanış olmayan situasiyalarda istifadə
+4. **Təhlil etmə** — mürəkkəb məsələləri komponentlərə ayırma
+5. **Qiymətləndirmə** — həll yollarının effektivliyini qiymətləndirmə
+6. **Yaratma** — yeni riyazi modellər və həll yolları qurma
+
+### Aparıcı 6 Ölkənin Təcrübəsi
+
+| Ölkə | Xüsusi yanaşma |
+|------|----------------|
+| **Sinqapur** | CPA (Concrete-Pictorial-Abstract), Bar Model, Singapore Math |
+| **Finlandiya** | Fenomen-əsaslı öyrənmə, PBL, fənlərarası layihələr |
+| **Yaponiya** | Lesson Study, Hatsumon, Neriage, Matome, Bansho |
+| **Cənubi Koreya** | Texnologiya inteqrasiyası, yaradıcılıq |
+| **Kanada (Ontario)** | Kodlaşdırma, hesablama düşüncəsi |
+| **Estoniya** | Rəqəmsal alətlər, statistik düşüncə |
+
+---
+
+## STEAM Yanaşması
+
+STEAM = **S**cience + **T**echnology + **E**ngineering + **A**rts + **M**athematics
+
+Aşağı siniflərdə (1-6) riyaziyyat dərslərinə STEAM inteqrasiyası **məcburidir**:
+
+### 1-4 Siniflər (İbtidai)
+- **STEAM məcburi** (hər dərsdə ən azı bir element)
+- Oyun əsaslı öyrənmə
+- CPA (Concrete-Pictorial-Abstract) tam tətbiq
+- Nümunə fəaliyyətlər: Həndəsi Fiqur Şəhəri, Ədədlərlə Rəsm, Kəsr Pizza
+
+### 5-7 Siniflər (Orta)
+- GeoGebra istifadəsi
+- Layihə əsaslı öyrənmə
+- Texnoloji modelləşdirmə
+- Nümunə: Körpü Mühəndisliyi, Statistik Araşdırma
+
+### 8-11 Siniflər (Yuxarı)
+- Modelləşdirmə və proqnozlaşdırma
+- PISA Advanced səviyyəli məsələlər
+- Real həyat problemləri
+- Fənlərarası inteqrasiya (fizika, kimya, iqtisadiyyat)
+
+---
+
+## Texniki Stek
+
+| Komponent | Texnologiya |
+|-----------|-------------|
+| **Proqramlaşdırma dili** | R (>= 4.2) |
+| **Veb interfeys** | R Shiny + shinydashboard |
+| **Süni intellekt** | Claude API (Anthropic) — Sonnet 4 |
+| **Verilənlər bazası** | PostgreSQL |
+| **PDF emalı** | pdftools (RAG üçün) |
+| **Vizuallaşdırma** | Plotly |
+| **HTTP sorğular** | httr paketi |
+| **JSON emal** | jsonlite paketi |
+| **DOCX ixrac** | officer, flextable |
+
+---
+
+## Layihə Strukturu
 
 ```
 Riy_Muellim_Agent/
-├── r_shiny/app/
-│   └── app.R                 # R Shiny interfeys (əsas proqram)
-├── src/
-│   ├── server.js             # Node.js API server
-│   ├── core/
-│   │   └── ai_engine.js      # Claude + OpenAI multi-model engine
-│   ├── agents/
-│   │   ├── lesson_planning/  # Dərs planlama agenti
-│   │   ├── assessment/       # Qiymətləndirmə agenti
-│   │   ├── communication/    # Kommunikasiya agenti
-│   │   ├── student_progress/ # Şagird inkişafı agenti
-│   │   ├── pedagogical/      # Metodiki kömək agenti
-│   │   └── digital_assistant/# Rəqəmsal assistant
-│   ├── api/
-│   │   └── routes.js         # API endpoint-ları
-│   └── middleware/
-│       └── auth.js           # JWT autentifikasiya
-├── database/
-│   ├── migrations/           # PostgreSQL schema
-│   └── seeds/                # İlkin verilənlər
-├── derslikler/
-│   ├── pdf/                  # 17 dərslik PDF (gitignore)
-│   ├── chunks/               # 519 chunk (JSON)
-│   ├── standards.json        # 178 kurikulum standartı
-│   └── topics.json           # Mövzular
-├── config/
-│   └── database.js           # DB konfiqurasiyası
-├── scripts/
-│   ├── pdf_pipeline.py       # PDF → chunk pipeline
-│   ├── pdf_to_chunks.py      # PDF parçalama
-│   ├── search_chunks.py      # Chunk axtarış
-│   └── setup.sh              # Quraşdırma skripti
-├── Ders_planlari/            # Generasiya olunmuş dərs planları
-├── Testler/                  # Generasiya olunmuş testlər
-├── Mesajlar/                 # Generasiya olunmuş mesajlar
-├── .env.example              # Konfiqurasiya nümunəsi
-├── package.json              # Node.js asılılıqlar
-├── Dockerfile                # Docker image
-├── docker-compose.yml        # Docker compose
-└── CLAUDE.md                 # AI agent təlimatı
+├── r_shiny/
+│   └── app/
+│       ├── app.R                 # Əsas Shiny tətbiqi (~80KB)
+│       ├── .env                  # Lokal konfiqurasiya (git-də deyil)
+│       ├── .Renviron             # R environment (git-də deyil)
+│       ├── Ders_planlari/        # Generasiya olunmuş dərs planları
+│       ├── Testler/              # Generasiya olunmuş testlər
+│       ├── Mesajlar/             # Generasiya olunmuş mesajlar
+│       └── derslikler/           # PDF dərsliklər (RAG üçün)
+├── scripts/                      # Köməkçi skriptlər
+├── database/                     # PostgreSQL schema və seed
+├── CLAUDE.md                     # AI təlimatları
+├── README.md                     # Bu fayl
+├── .env.example                  # .env nümunəsi
+├── .gitignore                    # Git ignore qaydaları
+└── setup.sh                      # İlkin quraşdırma
 ```
+
+---
+
+## Verilənlər Bazası
+
+Baza adı: `riy_muellim_agent` və ya `muellim_agent`
+
+### Əsas cədvəllər
+- **subjects** — Fənlər (Riyaziyyat və s.)
+- **curriculum_standards** — 178 riyaziyyat standartı (1-11 siniflər)
+- **topics** — 254 riyaziyyat mövzusu
+- **generated_content** — AI tərəfindən yaradılmış məzmun
+- **timss_framework** — TIMSS çərçivəsi
+- **pisa_framework** — PISA çərçivəsi
+- **international_practices** — 6 ölkənin təcrübəsi
+- **steam_activities** — STEAM fəaliyyət kitabxanası
+
+### Sinif üzrə paylanma
+| Sinif | Standart sayı | Mövzu sayı |
+|-------|---------------|------------|
+| 1-4 | 62 | 98 |
+| 5-9 | 86 | 124 |
+| 10-11 | 30 | 32 |
+| **Yekun** | **178** | **254** |
 
 ---
 
 ## Quraşdırma
 
 ### Tələblər
+- **R** >= 4.2
+- **PostgreSQL** >= 14
+- **Anthropic API açarı**
+- R paketləri: `shiny`, `shinydashboard`, `DT`, `httr`, `jsonlite`, `plotly`
 
-| Komponent | Versiya | Məqsəd |
-|-----------|---------|--------|
-| R | >= 4.3 | Shiny interfeys |
-| Node.js | >= 18 | API server |
-| PostgreSQL | >= 14 | Verilənlər bazası (optional) |
-| Pandoc | >= 2.19 | DOCX generasiyası |
-| Python | >= 3.9 | PDF pipeline (birdəfəlik) |
-
-### R paketləri
-
-```r
-install.packages(c(
-  "shiny", "shinydashboard", "DT",
-  "httr", "jsonlite", "plotly"
-))
-```
-
-### Addım 1: Klonlama
+### Addımlar
 
 ```bash
+# 1. Repo-nu klonla
 git clone https://github.com/Ttariyel-1954/Riy_Muellim_Agent.git
 cd Riy_Muellim_Agent
+
+# 2. R paketlərini qur
+Rscript -e 'install.packages(c("shiny","shinydashboard","DT","httr","jsonlite","plotly"))'
+
+# 3. .env faylını yarat
+cp .env.example r_shiny/app/.env
+nano r_shiny/app/.env
+# ANTHROPIC_API_KEY=sk-ant-api03-SİZİN_AÇARINIZ yazın
+
+# 4. APP_DIR yolunu yoxlayın (r_shiny/app/app.R başında)
+# Əgər layihəniz ~/projects/standards/Riy_Muellim_Agent altındadırsa,
+# app.R-də PROJECT_DIR-i düzəldin:
+# PROJECT_DIR <- normalizePath("~/projects/standards/Riy_Muellim_Agent", mustWork = FALSE)
+
+# 5. PostgreSQL bazasını yarat
+createdb riy_muellim_agent
+psql -d riy_muellim_agent -f database/migrations/001_schema.sql
+psql -d riy_muellim_agent -f database/seeds/001_standards_seed.sql
+
+# 6. Dashboard-u işə sal
+Rscript -e "shiny::runApp('r_shiny/app/app.R', port=4040)"
 ```
 
-### Addım 2: .env faylını yaradın
+Brauzer: **http://localhost:4040**
 
-```bash
-cp .env.example .env
-```
-
-`.env` faylını redaktə edin:
-
-```env
-# Mütləq lazımdır:
-ANTHROPIC_API_KEY=sk-ant-api03-YOUR_KEY_HERE
-
-# Optional:
-DB_HOST=localhost
-DB_PORT=5432
-DB_NAME=riy_muellim_agent
-DB_USER=your_user
-DB_PASSWORD=your_password
-SHINY_PORT=4040
-DEFAULT_AI_MODEL=claude-sonnet-4-20250514
-```
-
-### Addım 3: R Shiny interfeysi işə salın
-
-```bash
-cd r_shiny/app
-Rscript -e "shiny::runApp('.', port = 4040, host = '0.0.0.0')"
-```
-
-Və ya:
-
-```bash
-npm run shiny
-```
-
-Brauzer: `http://localhost:4040`
-
-### Addım 4: Node.js API (optional)
-
-```bash
-npm install
-npm run db:setup   # PostgreSQL lazımdır
-npm start          # http://localhost:3000
-```
+### RStudio ilə işə salmaq (tövsiyə olunur)
+1. RStudio-da `r_shiny/app/app.R` faylını açın
+2. Yuxarıdan **"Run App"** düyməsini basın
+3. Dashboard yeni pəncərədə açılacaq
 
 ---
 
-## Docker ilə işə salma
-
-```bash
-docker-compose up -d
-```
-
-Bu komanda həm Node.js API-ni (`localhost:3000`), həm PostgreSQL-i (`localhost:5432`), həm də R Shiny-ni işə salır.
-
----
-
-## İstifadə Təlimatı
-
-### Tab 1: Dərs Planı Generasiyası
-
-Müəllim aşağıdakı parametrləri seçir:
-
-| Parametr | Seçim |
-|----------|-------|
-| Sinif | 1-11 |
-| Mövzu | Kurikulumdan seçim və ya azad daxiletmə |
-| Standart | Avtomatik yüklənir (178 standart) |
-| Dərs tipi | Yeni mövzu / Möhkəmləndirmə / Qiymətləndirmə |
-| Beynəlxalq çərçivə | TIMSS / PISA / PIRLS / Blum / CPA |
-| Diferensial təlim | 3 səviyyə (zəif/orta/güclü) |
-
-**Çıxış:** HTML5 + DOCX fayl — dərhal çap üçün hazır, 2500+ söz ətraflı dərs planı.
-
-**Dərs planının strukturu:**
-
-1. Ümumi məlumat (sinif, mövzu, standart, tarix)
-2. Təlim nəticələri — Blum taksonomiyasına görə ölçülə bilən feillər
-3. Beynəlxalq standart uyğunluğu (TIMSS domen/koqnitiv, PISA prosesi/konteksti)
-4. Sinqapur CPA (Concrete → Pictorial → Abstract) ardıcıllığı
-5. Yaponiya Lesson Study elementləri (Hatsumon, Kikan-shido, Neriage, Matome)
-6. Dəqiqəlik dərs gedişi (45 dəqiqə, 5 mərhələ)
-7. Diferensial tapşırıqlar (3 səviyyə, hər birinin TIMSS koqnitiv doməni)
-8. STEAM inteqrasiyası (Science, Technology, Engineering, Arts, Mathematics)
-9. Formativ qiymətləndirmə alətləri
-10. Ev tapşırığı (diferensiyalaşdırılmış)
-
-### Tab 2: Test Generasiyası
-
-TIMSS/PISA formatında testlər yaradır:
-
-- Çoxseçimli suallar (Blum səviyyələri ilə)
-- Qısa cavablı suallar
-- Açıq suallar (rubrika ilə)
-- Həll yolu + izah + dərslik istinad
-- Distraktor analizi
-
-**Çətinlik səviyyələri:** Asan → Orta → Çətin → Qarışıq
-
-### Tab 3: Aylıq Plan
-
-Bütöv ay üçün həftəlik cədvəl:
-- Hər həftə: mövzu + standart + saat bölgüsü
-- PISA/PIRLS uyğunluq göstəricisi
-- Formativ/summativ qiymətləndirmə nöqtələri
-- Dərs tipi variantları
-
-### Tab 4: Kommunikasiya
-
-Müəllim üçün hazır sənədlər:
-- Valideyn məktubu
-- İdari hesabat
-- Pedaqoji şura çıxışı
-- Şagird xasiyyətnaməsi
-
-### Tab 5: Şagird Analizi
-
-Fərdi şagird profili yaradır:
-- Güclü/zəif tərəfləri
-- TIMSS koqnitiv domen profili
-- Fərdiləşdirilmiş tövsiyələr
-- Valideyn üçün təklif məktubu
-
-### Tab 6: Standartlar
-
-Bütün kurikulum standartlarını cədvəl şəklində göstərir:
-- 178 əsas standart
-- Sinifə görə filtrasiya
-- Sahəyə görə qruplaşdırma (ədəd, həndəsə, cəbr, statistika)
-
-### Tab 7: Statistika
-
-Generasiya statistikası:
-- Vaxt, token sayı, təxmini xərc
-- Arxiv cədvəli (keçmiş planlar/testlər)
-- HTML və DOCX yükləmə düyməsi
-
----
-
-## Bilik Bazası
-
-### Dərslik Chunk-ları
-
-17 riyaziyyat dərsliyi (1-11-ci sinif, I və II hissə) PDF formatından parçalanıb JSON chunk-larına çevrilib:
-
-| Sinif | Dərslik | Chunk sayı |
-|-------|---------|------------|
-| 1 | I hissə + II hissə | ~50 |
-| 2 | I hissə + II hissə | ~50 |
-| 3 | I hissə + II hissə | ~50 |
-| 4 | I hissə + II hissə | ~50 |
-| 5 | I hissə + II hissə | ~50 |
-| 6 | I hissə + II hissə | ~50 |
-| 7 | Tam | ~40 |
-| 8 | Tam | ~40 |
-| 9 | Tam | ~40 |
-| 10 | Tam | ~35 |
-| 11 | Tam | ~35 |
-| **Cəmi** | **17 PDF** | **519 chunk** |
-
-Hər chunk tərkibi: sinif, hissə, mövzu, sahə, mətn, səhifə aralığı, söz sayı.
-
-### Kurikulum Standartları
-
-178 standart 5 sahə üzrə:
-
-| Sahə | İzah |
-|------|------|
-| Ədədlər və əməliyyatlar | Natural ədədlər, kəsrlər, onluq kəsrlər, rasional ədədlər |
-| Cəbr və funksiyalar | Dəyişənlər, tənliklər, bərabərsizliklər, funksiyalar |
-| Həndəsə | Fiqurlar, ölçülər, koordinat, çevirmələr |
-| Ölçmə | Uzunluq, sahə, həcm, kütlə, vaxt |
-| Statistika və ehtimal | Məlumat toplama, diaqram, orta, ehtimal |
-
----
-
-## Beynəlxalq Standartlar
-
-### TIMSS İnteqrasiyası
-
-**Kontekt domenlər:** Ədəd, Cəbr, Həndəsə, Məlumat və Ehtimal
-
-**Koqnitiv domenlər:**
-- **[B] Bilmək (Knowing):** Faktlar, prosedurlar, anlayışlar
-- **[T] Tətbiq etmək (Applying):** Standart məsələ həlli
-- **[M] Mühakimə yürütmək (Reasoning):** Qeyri-standart, çoxaddımlı məsələlər
-
-Hər tapşırıq [B], [T], [M] etiketi ilə işarələnir.
-
-### PISA İnteqrasiyası
-
-**Proseslər:** Formulasiya → Tətbiq → Şərh/Qiymətləndirmə
-
-**Kontekstlər:** Şəxsi, Peşəkar, Sosial, Elmi
-
-**Bacarıq səviyyələri:** 1-6 (hər test sualında göstərilir)
-
-### Sinqapur CPA Modeli
-
-Hər dərs planında 3 mərhələ:
-1. **Concrete (Əşyavi):** Manipulyativlər — sayğac çubuqları, onluq bloklar, tangram
-2. **Pictorial (Təsviri):** Vizual modellər — ədəd xətti, bar modeli, diaqram
-3. **Abstract (Mücərrəd):** Riyazi simvol və formulalar
-
-### Yaponiya Lesson Study
-
-- **Hatsumon:** Dərsin əvvəlində düşündürücü sual
-- **Kikan-shido:** Fərdi müşahidə, sinif boyu gəzərək
-- **Neriage:** Müxtəlif həll yollarının müzakirəsi
-- **Matome:** Dərsin sonunda ümumiləşdirmə
-- **Bansho:** Lövhədə planlaşdırılmış yazı
-
----
-
-## API Endpoint-ları
-
-Node.js API (optional, R Shiny müstəqil işləyir):
-
-| Metod | Endpoint | Funksiyası |
-|-------|----------|-----------|
-| GET | `/api/v1/health` | Sağlamlıq yoxlaması |
-| POST | `/api/v1/ders-plani` | Dərs planı generasiyası |
-| POST | `/api/v1/test-yarat` | Test generasiyası |
-| POST | `/api/v1/aylik-plan` | Aylıq plan |
-| POST | `/api/v1/mesaj-yaz` | Mesaj generasiyası |
-| POST | `/api/v1/shagird-analiz` | Şagird analizi |
-| GET | `/api/v1/arxiv/ders-planlari` | Keçmiş planlar |
-| GET | `/api/v1/arxiv/testler` | Keçmiş testlər |
-
----
-
-## Verilənlər Bazası (PostgreSQL)
-
-### Əsas cədvəllər
-
-| Cədvəl | Məqsəd | Sütun sayı |
-|--------|--------|------------|
-| `riy_standartlari` | Kurikulum standartları | 11 |
-| `riy_movzular` | 254 mövzu | 7 |
-| `riy_derslikler` | 519 chunk | 10 |
-| `ders_planlari` | Generasiya olunmuş planlar | 10 |
-| `testler` | Generasiya olunmuş testlər | 10 |
-| `mesajlar` | Mesajlar | 5 |
-| `timss_framework` | TIMSS çərçivəsi | 8 |
-| `pisa_framework` | PISA çərçivəsi | 7 |
-| `steam_activities` | STEAM fəaliyyətlər kitabxanası | 10 |
-| `international_practices` | Beynəlxalq yaxşı təcrübələr | 9 |
-
-### Migration
-
-```bash
-npm run db:migrate   # Schema yaradır
-npm run db:seed      # İlkin məlumatları daxil edir
-```
-
----
-
-## Fayl Çıxışı
-
-Hər generasiya nəticəsi 2 formatda saxlanır:
-
-### HTML5
-- Responsive dizayn, mobil uyumlu
-- Gradient başlıqlar, rəngli fazalar
-- Çap üçün optimizasiya olunmuş (`@media print`)
-- İnteraktiv hover effektləri
-
-### DOCX (Word)
-- Pandoc vasitəsilə avtomatik çevrilir
-- Azərbaycan əlifbası dəstəyi (UTF-8)
-- ARTI 2026 altbilgi
-
-### Fayl adlandırma
-
-```
-sinif{N}_{movzu_slug}_{tip}_{timestamp}.html
-sinif{N}_{movzu_slug}_{tip}_{timestamp}.docx
-```
-
-Misal: `sinif7_Nisb_t__m_t_nasiblik_ders_plani_20260303_093906.html`
+## İstifadə Qaydası
+
+### Dərs planı yaratmaq
+1. **Dərs Planı** tabını açın
+2. Sinif (1-11) və mövzu seçin
+3. İsteğe bağlı: konkret standart seçin
+4. **"Dərs planı yarat"** düyməsini basın
+5. 60-90 saniyə ərzində 10 bölməli genişləndirilmiş dərs planı hazır olacaq
+6. HTML və ya DOCX formatında yükləyin
+
+### Test yaratmaq
+1. **Testlər** tabına keçin
+2. Sinif və standart seçin
+3. Sual növlərini və saylarını təyin edin
+4. Bloom səviyyəsini seçin
+5. **"Test yarat"** düyməsi ilə generasiya edin
+
+### STEAM fəaliyyəti yaratmaq
+1. **STEAM** tabına keçin
+2. Sinif və mövzu seçin
+3. STEAM komponenti seçin (Science, Technology, Engineering, Arts)
+4. Fəaliyyət hazırlanacaq
 
 ---
 
 ## Konfiqurasiya
 
-### AI Model Seçimi
+### `.env` və ya `.Renviron` faylı
 
-`.env` faylında:
-
-```env
-DEFAULT_AI_MODEL=claude-sonnet-4-20250514
-```
-
-Dəstəklənən modellər:
-- `claude-sonnet-4-20250514` (default, optimal balans)
-- `claude-haiku-4-5-20251001` (sürətli, ucuz)
-- `gpt-4o` (OpenAI alternativi)
-
-### Token Limitləri
-
-| Model | Default max_tokens |
-|-------|--------------------|
-| Claude Sonnet/Opus | 16384 |
-| Claude Haiku | 4096 |
-| GPT-4o | 16384 |
-
----
-
-## İnkişaf
-
-### Lokal inkişaf
+Fayl yeri: `r_shiny/app/.env` **və ya** `~/projects/standards/Riy_Muellim_Agent/.env`
 
 ```bash
-# R Shiny (live reload)
-cd r_shiny/app
-Rscript -e "shiny::runApp('.', port = 4040)"
+# PostgreSQL
+DB_HOST=localhost
+DB_PORT=5432
+DB_NAME=riy_muellim_agent
+DB_USER=your_username
+DB_PASSWORD=
 
-# Node.js (nodemon ilə)
-npm run dev
+# Claude AI
+ANTHROPIC_API_KEY=sk-ant-api03-SİZİN_AÇARINIZ
+DEFAULT_AI_MODEL=claude-sonnet-4-20250514
 
-# PDF pipeline (birdəfəlik)
-python3 scripts/pdf_pipeline.py
+# Shiny
+SHINY_PORT=4040
 ```
 
-### Layihə strukturuna yeni agent əlavə etmək
+### Avtomatik API Key Yükləmə
 
-1. `src/agents/` altında yeni qovluq yaradın
-2. `index.js` faylında agent sinifini yaradın
-3. `src/api/routes.js`-ə endpoint əlavə edin
-4. `r_shiny/app/app.R`-ə yeni tab əlavə edin
+Dashboard açılanda API açarı `.env` faylından avtomatik oxunur və **görünməz** (password format) olaraq daxil edilir.
+
+### APP_DIR Problemi
+
+Əgər dashboard açılır amma API key işləmirsə, `app.R` faylının başında `PROJECT_DIR` yolunu yoxlayın. Layihəni köçürəndə bu yol yenilənməlidir:
+
+```r
+PROJECT_DIR <- normalizePath("~/projects/standards/Riy_Muellim_Agent", mustWork = FALSE)
+```
 
 ---
 
-## Texnoloji Stek
+## Təhlükəsizlik
 
-| Komponent | Texnologiya | Versiya |
-|-----------|-------------|---------|
-| Frontend | R Shiny + shinydashboard | 1.8.x |
-| AI Engine | Claude API (Anthropic) | v2023-06-01 |
-| Backend | Node.js + Express | 18+ |
-| Database | PostgreSQL | 14+ |
-| Vizualizasiya | Plotly.js | 2.x |
-| Sənəd generasiyası | Pandoc (HTML → DOCX) | 2.19+ |
-| PDF pipeline | Python (PyPDF2, tiktoken) | 3.9+ |
-| Konteynerləşdirmə | Docker + Docker Compose | 24+ |
+### API Açarları
+- **HEÇ VAXT** `.env`, `.Renviron` fayllarını git-ə commit etməyin
+- `.gitignore` faylı bu faylları avtomatik istisna edir
+- API açarı sızarsa, dərhal [console.anthropic.com](https://console.anthropic.com) saytından **revoke** edin
+- Git-də yalnız `.env.example` saxlanılır (açarsız nümunə)
+
+### Fayl Uzantıları Problemi
+
+macOS Finder bəzən `.env` yaradanda avtomatik `.sh` əlavə edir. Düzəltmək üçün:
+
+```bash
+mv .env.sh .env
+```
+
+### Backup
+- `database/` qovluğundakı SQL faylları (schema və seed) əsas bərpa mənbəyidir
+- AI-generasiya məzmunu `Ders_planlari/`, `Testler/`, `Mesajlar/` qovluqlarında lokal saxlanılır (git-də deyil)
+
+---
+
+## Onlayn Platformalar
+
+| Platforma | Link |
+|-----------|------|
+| **GitHub** | [github.com/Ttariyel-1954/Riy_Muellim_Agent](https://github.com/Ttariyel-1954/Riy_Muellim_Agent) |
+
+---
+
+## Əlaqəli Layihələr
+
+Bu layihə ARTI-nin riyaziyyat təhsili ekosisteminin bir hissəsidir:
+
+| Layihə | Təsvir |
+|--------|--------|
+| [Riy_standartlar](https://github.com/Ttariyel-1954/Riy_Yeni_standartlar) | 238 riyaziyyat standartının AI ilə yenilənməsi |
+| [Az_agent](https://github.com/Ttariyel-1954/Az_Agent) | Azərbaycan dili müəllim agenti |
+| [Az_dili_standartlar](https://github.com/Ttariyel-1954/Az_dili_standartlar) | 442 Azərbaycan dili standartının yenilənməsi |
+
+---
+
+## Layihə Rəhbəri
+
+**Talıbov Tariyel İsmayıl oğlu**
+Riyaziyyat üzrə fəlsəfə doktoru
+Azərbaycan Respublikası Təhsil İnstitutunun direktor müavini
+
+**ARTI — 2026**
 
 ---
 
 ## Lisenziya
 
-MIT License — ARTI 2026, Tariyel Talibov
-
----
-
-## Əlaqə
-
-- **Müəllif:** Tariyel Talibov
-- **Təşkilat:** ARTI — Azərbaycan Respublikası Təhsil İnstitutu
-- **GitHub:** [Ttariyel-1954/Riy_Muellim_Agent](https://github.com/Ttariyel-1954/Riy_Muellim_Agent)
+Bu layihə təhsil məqsədli istifadə üçün nəzərdə tutulub.
+Azərbaycan Respublikası Elm və Təhsil Nazirliyi — ARTI

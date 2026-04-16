@@ -12,7 +12,7 @@ library(jsonlite)
 PLOTLY_OK <- tryCatch({ library(plotly); TRUE }, error = function(e) {
   message("plotly yuklenmedi: ", e$message); FALSE })
 
-PROJECT_DIR <- normalizePath("~/projects/ai-agents/Riy_Muellim_Agent", mustWork = FALSE)
+PROJECT_DIR <- normalizePath("~/projects/standards/Riy_Muellim_Agent", mustWork = FALSE)
 LOCAL_DIR   <- normalizePath("~/Desktop/Riy_Muellim_Agent", mustWork = FALSE)
 APP_DIR     <- if (dir.exists(PROJECT_DIR)) PROJECT_DIR else if (dir.exists(LOCAL_DIR)) LOCAL_DIR else getwd()
 
